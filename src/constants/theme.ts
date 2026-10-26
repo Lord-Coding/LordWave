@@ -1,55 +1,98 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://unistyl.es/), etc.
+import { Platform, StyleSheet } from "react-native";
+
+// ---------------------------------------------------------------------------
+// Palette de couleurs
+// ---------------------------------------------------------------------------
+
+/** Couleur primaire : #b155e6
+ *  tint  = version plus claire (+30% luminosité)
+ *  shade = version plus sombre (-30% luminosité)
  */
+export const palette = {
+  primary: "#b155e6",
+  primaryTint: "#cc88ee", // clair — hover, highlight, icônes actives
+  primaryShade: "#7a2fa1", // sombre — pressed, bordures, accents forts
 
-import '@/global.css';
+  secondary: "#6f2e94", // violet profond — éléments secondaires
+  secondaryTint: "#9a5bbb",
+  secondaryShade: "#4a1d63",
 
-import { Platform } from 'react-native';
+  // Neutres
+  white: "#ffffff",
+  black: "#000000",
+} as const;
+
+// ---------------------------------------------------------------------------
+// Thèmes light / dark
+// ---------------------------------------------------------------------------
 
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: "#000000",
+    textSecondary: "#60646C",
+    background: "#ffffff",
+    backgroundElement: "#F0F0F3",
+    backgroundSelected: "#E0E1E6",
+    tabBar: "#e3e3e3", // fond de la tab-bar en mode clair
+    primary: palette.primary,
+    primaryTint: palette.primaryTint,
+    primaryShade: palette.primaryShade,
+    secondary: palette.secondary,
+    secondaryTint: palette.secondaryTint,
+    secondaryShade: palette.secondaryShade,
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: "#ffffff",
+    textSecondary: "#B0B4BA",
+    background: "#14161b",
+    backgroundElement: "#212225",
+    backgroundSelected: "#2E3135",
+    tabBar: "#21252d", // fond de la tab-bar en mode sombre
+    primary: palette.primary,
+    primaryTint: palette.primaryTint,
+    primaryShade: palette.primaryShade,
+    secondary: palette.secondary,
+    secondaryTint: palette.secondaryTint,
+    secondaryShade: palette.secondaryShade,
   },
 } as const;
 
+export type ColorScheme = keyof typeof Colors;
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+export type Theme = typeof Colors.dark;
+
+// ---------------------------------------------------------------------------
+// Typographie & espacements (inchangés)
+// ---------------------------------------------------------------------------
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    sans: "system-ui",
+    serif: "ui-serif",
+    rounded: "ui-rounded",
+    mono: "ui-monospace",
   },
   default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+    sans: "normal",
+    serif: "serif",
+    rounded: "normal",
+    mono: "monospace",
   },
   web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
+    sans: "var(--font-display)",
+    serif: "var(--font-serif)",
+    rounded: "var(--font-rounded)",
+    mono: "var(--font-mono)",
   },
 });
+
+export const FontSize = {
+  xs: 12,
+  sm: 16,
+  base: 20,
+  lg: 24,
+  extra: 36,
+} as const;
 
 export const Spacing = {
   half: 2,
@@ -61,5 +104,32 @@ export const Spacing = {
   six: 64,
 } as const;
 
+// ---------------------------------------------------------------------------
+// Layout
+// ---------------------------------------------------------------------------
+
+export const TAB_BAR_HEIGHT = Platform.select({ ios: 88, android: 80 }) ?? 70;
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+
+// ---------------------------------------------------------------------------
+// Styles globaux réutilisables
+// ---------------------------------------------------------------------------
+
+export const defaultStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    text: {
+      fontSize: FontSize.base,
+      color: theme.text,
+    },
+  });
+
+export const utilsStyle = StyleSheet.create({
+  contentWithTabBar: {
+    paddingBottom: TAB_BAR_HEIGHT,
+  },
+});
