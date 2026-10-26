@@ -12,21 +12,11 @@ import { useAppTheme } from "@/context/theme-context";
 const TAB_CONTENT_HEIGHT = 60;
 
 type ScreenWrapperProps = ScrollViewProps & {
-  /** Padding intérieur horizontal du contenu. Défaut : 16 */
   paddingHorizontal?: number;
-  /** Padding intérieur en haut du contenu. Défaut : 24 */
   paddingTop?: number;
-  /** Style supplémentaire appliqué au contentContainerStyle */
   contentStyle?: StyleProp<ViewStyle>;
 };
 
-/**
- * Wrapper standard pour les pages à défilement.
- * Gère automatiquement :
- *  - la couleur de fond depuis le thème
- *  - le padding bottom dynamique (tab-bar + safe area)
- *  - le padding haut et horizontal par défaut
- */
 export function ScreenWrapper({
   children,
   paddingHorizontal = 16,
@@ -37,7 +27,6 @@ export function ScreenWrapper({
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
 
-  // Même calcul que dans la tab-bar
   const paddingBottom = TAB_CONTENT_HEIGHT + insets.bottom + 8;
 
   return (

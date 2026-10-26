@@ -6,15 +6,15 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const TAB_HEIGHT = 60; // hauteur visible de la barre (icône + label)
+const TAB_HEIGHT = 60;
 
 const TabsNavigation = () => {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
 
-  // La hauteur totale = contenu + safe area bottom (barre de navigation Android)
   const tabBarHeight = TAB_HEIGHT + insets.bottom;
 
   return (
@@ -26,9 +26,13 @@ const TabsNavigation = () => {
           fontSize: FontSize.xs,
           fontWeight: "500",
         },
-        // Supprime l'effet ripple Android et réduit l'opacité au press sur iOS
-        tabBarPressColor: "transparent",
-        tabBarPressOpacity: 0.6,
+        // Ripple totalement retiré via style overlay transparent
+        tabBarButton: ({ ref: _ref, ...props }) => (
+          <Pressable
+            {...props}
+            android_ripple={{ color: "transparent", radius: 0 }}
+          />
+        ),
         tabBarStyle: {
           position: "absolute",
           backgroundColor: theme.tabBar,
@@ -37,13 +41,6 @@ const TabsNavigation = () => {
           borderTopRightRadius: 20,
           height: tabBarHeight,
           paddingBottom: insets.bottom,
-          paddingTop: 8,
-          // Ombre iOS
-          shadowColor: "#000000",
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.12,
-          shadowRadius: 12,
-          // Ombre Android
           elevation: 12,
         },
         headerShown: false,
@@ -53,12 +50,23 @@ const TabsNavigation = () => {
         name="playlists"
         options={{
           title: "Playlist",
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons
-              name="playlist-play"
-              size={28}
-              color={color as string}
-            />
+          tabBarIcon: ({ color, focused }) => (
+            <View
+              style={{
+                width: 50,
+                height: 26,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: focused ? `${theme.primary}22` : "transparent",
+                borderRadius: 12,
+              }}
+            >
+              <MaterialCommunityIcons
+                name="playlist-play"
+                size={28}
+                color={color as string}
+              />
+            </View>
           ),
         }}
       />
@@ -66,8 +74,23 @@ const TabsNavigation = () => {
         name="(songs)"
         options={{
           title: "Chansons",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="musical-notes" size={24} color={color as string} />
+          tabBarIcon: ({ color, focused }) => (
+            <View
+              style={{
+                width: 50,
+                height: 26,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: focused ? `${theme.primary}22` : "transparent",
+                borderRadius: 12,
+              }}
+            >
+              <Ionicons
+                name="musical-notes"
+                size={24}
+                color={color as string}
+              />
+            </View>
           ),
         }}
       />
@@ -75,8 +98,19 @@ const TabsNavigation = () => {
         name="favorites"
         options={{
           title: "Favoris",
-          tabBarIcon: ({ color }) => (
-            <FontAwesome name="heart" size={20} color={color as string} />
+          tabBarIcon: ({ color, focused }) => (
+            <View
+              style={{
+                width: 50,
+                height: 26,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: focused ? `${theme.primary}22` : "transparent",
+                borderRadius: 12,
+              }}
+            >
+              <FontAwesome name="heart" size={20} color={color as string} />
+            </View>
           ),
         }}
       />

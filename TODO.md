@@ -36,6 +36,9 @@
 - [x] Ajouter une ombre portée (`elevation` Android, `shadow*` iOS).
 - [x] Ajuster `height` et `paddingBottom` pour centrer les icônes.
 - [x] Connecter la couleur de fond au thème via `theme.tabBar`.
+- [x] Ajouter un fond coloré + border radius sur l'icône active.
+- [x] Retirer l'effet ripple Android sur les boutons de la tab-bar.
+- [ ] Ajouter des animations sur les boutons de la tab-bar (Option 4 recommandée : scale au press via `tabBarButton` + bounce vertical au focus via `tabBarIcon`).
 - [ ] Cacher la tab-bar sur les écrans enfants (ex: lecteur plein écran) via `tabBarStyle: { display: 'none' }`.
 - [ ] Ajouter un `BlurView` comme fond pour un effet verre dépoli.
 - [ ] Ajouter un badge de notification sur un onglet (`tabBarBadge`).
