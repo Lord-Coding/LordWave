@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/context/theme-context";
 
-// Hauteur visible de la tab-bar (icône + label), sans la safe area
 const TAB_CONTENT_HEIGHT = 60;
 
 type ScreenWrapperProps = ScrollViewProps & {

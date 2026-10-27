@@ -1,30 +1,29 @@
 import { NativeStackNavigationOptions } from "expo-router";
 import { Platform } from "react-native";
 
-import { Colors } from "./theme";
+import { Theme } from "./theme";
 
-// Utilise toujours le thème sombre pour les headers — cohérent avec l'app
-const c = Colors.dark;
-
-export const StackScreenWidthSearchBar: NativeStackNavigationOptions = {
+export const stackScreenWithSearchBar = (
+  theme: Theme,
+): NativeStackNavigationOptions => ({
   headerLargeTitle: true,
   headerLargeStyle: {
-    backgroundColor: c.background,
+    backgroundColor: theme.background,
   },
   headerLargeTitleStyle: {
-    color: c.text,
+    color: theme.text,
   },
   headerStyle: {
-    backgroundColor: c.background,
+    backgroundColor: theme.background,
   },
   headerTitleStyle: {
-    color: c.text,
+    color: theme.text,
     fontSize: 36,
     fontWeight: "800",
   },
-  headerTintColor: c.text,
+  headerTintColor: theme.text,
   // headerTransparent + blur uniquement sur iOS
   headerTransparent: Platform.OS === "ios",
   headerBlurEffect: Platform.OS === "ios" ? "prominent" : undefined,
   headerShadowVisible: false,
-};
+});
