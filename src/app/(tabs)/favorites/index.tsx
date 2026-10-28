@@ -1,16 +1,29 @@
 import { ScreenWrapper } from "@/components/screen-wrapper";
-import { FontSize } from "@/constants/theme";
+import { FontSize, Spacing } from "@/constants/theme";
 import { useThemedStyles } from "@/hooks/use-themed-styles";
-import { Text } from "react-native";
+import { useNavigationSearch } from "@/hooks/useNavigationSearch";
+import { ScrollView, Text } from "react-native";
 
 const FavoritesScreen = () => {
   const styles = useThemedStyles((theme) => ({
     text: { fontSize: FontSize.base, color: theme.text },
   }));
 
+  const search = useNavigationSearch({
+    searchBarOptions: {
+      placeholder: "Rechercher dans les favoris",
+    },
+  });
+
   return (
     <ScreenWrapper>
-      <Text style={styles.text}>Favoris Screen</Text>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        style={{ paddingHorizontal: Spacing.four }}
+      >
+        {/* TODO: afficher la liste des favoris */}
+        <Text style={styles.text}>Favoris Screen</Text>
+      </ScrollView>
     </ScreenWrapper>
   );
 };

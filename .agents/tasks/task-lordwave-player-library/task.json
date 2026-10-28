@@ -1,0 +1,7 @@
+{
+  "task_id": "task-lordwave-player-library",
+  "task_description": "Implement full-screen modal player screen, Expo Router registration, TrackListItem navigation, useMediaLibrary hook, app.json READ_MEDIA_AUDIO permission/plugin, replace static library.json with real device query in songs screen, formatted duration display with helper, and fix roLowerCase typo in filter.ts.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}

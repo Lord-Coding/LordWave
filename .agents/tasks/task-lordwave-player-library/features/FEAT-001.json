@@ -1,0 +1,23 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix the roLowerCase typo in src/helpers/filter.ts, add the formatDuration utility at src/utils/formatDuration.ts, update TrackListItem to show formatted duration and add onPress navigation to /player, and update TracksList to pass the track correctly. These are small, self-contained fixes to existing logic that unblock everything else.",
+  "status": "pending",
+  "steps": [
+    "Fix src/helpers/filter.ts: change `track.title?.roLowerCase()` to `track.title?.toLowerCase()`. Also tighten the type: replace `(track: any)` with `(track: { title?: string })` to satisfy strict TS.",
+    "Create src/utils/formatDuration.ts: export a pure function `formatDuration(seconds: number | undefined): string` that converts seconds to 'M:SS' format (e.g. 63 → '1:03'). Return empty string '' when seconds is undefined.",
+    "Update src/components/TrackListItem.tsx: (a) import useRouter from expo-router and formatDuration from @/utils/formatDuration; (b) add onPress to the TouchableHighlight that calls router.push('/player'); (c) render track.duration formatted using formatDuration to the right of the artist line, styled with theme.textSecondary and FontSize.xs; (d) fix the layout so the artwork and text are in a row (the outer View inside TouchableHighlight must be styled as trackItemContainer with flexDirection:'row', not a nested View). Current code has a structural bug: the inner View with trackItemContainer style is inside an un-styled outer View — fix so the trackItemContainer View is the direct child of TouchableHighlight.",
+    "Update src/components/TracksList.tsx: the renderItem currently passes `track={{ ...track, image: track.artwork }}` — this is fine as-is since TrackListItem accepts `Track & { image?: string }`. No change needed here unless tsc reports an error."
+  ],
+  "acceptance_criteria": [
+    "npx tsc --noEmit reports zero errors in src/helpers/filter.ts, src/utils/formatDuration.ts, and src/components/TrackListItem.tsx",
+    "formatDuration(63) returns '1:03', formatDuration(3600) returns '60:00', formatDuration(undefined) returns ''",
+    "TrackListItem renders a duration text when track.duration is set",
+    "Tapping a TrackListItem navigates to /player (verified by router.push call in onPress)"
+  ],
+  "verification": [
+    "npx tsc --noEmit from c:\\Users\\lxrdf\\Desktop\\LordWave — zero TypeScript errors in the changed files"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

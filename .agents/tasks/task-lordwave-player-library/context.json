@@ -1,0 +1,30 @@
+{
+  "project_type": "React Native + Expo (SDK 58) mobile music player, local-first",
+  "language": "TypeScript (strict mode, no any)",
+  "build_system": "Expo with expo-router file-based routing; alias @/* maps to src/*, @/assets/* maps to assets/*; tsconfig strict; no jest/vitest configured",
+  "test_framework": "None configured. Verification is: npx expo-doctor && npx tsc --noEmit",
+  "build_command": "npx expo export (or npx expo start)",
+  "test_command": "npx tsc --noEmit",
+  "verification_instructions": "Run `npx tsc --noEmit` from c:\\Users\\lxrdf\\Desktop\\LordWave to catch TypeScript errors. Run `npx expo-doctor` to catch Expo config issues. No automated test suite exists.",
+  "snapshot_or_generated_files": null,
+  "environment_constraints": "Windows environment, PowerShell. No running dev server assumption. Native changes (app.json plugins, permissions) require a new EAS/dev-client build to take effect on device — document this, do not run it. expo-media-library SDK 58 uses new class-based API: Query, Asset, MediaType from 'expo-media-library' (old getAssetsAsync is deprecated/legacy). Asset properties like filename, duration are async getters (getDuration(), getFilename(), getUri()).",
+  "contribution_requirements": "No new dependencies. Use useAppTheme() for all colors. Use Track type from src/types/track.ts. No hardcoded colors. Explain before implementing per AGENTS.md — but this is an agent workflow so implement directly. Match existing import/formatting style.",
+  "key_patterns": "Components use useAppTheme() for theme. Styles inline or via useThemedStyles(). defaultStyles(theme) and utilsStyle(theme) factory functions from constants/theme.ts. Navigation via expo-router useRouter()/router.push(). Routes live under src/app/. Tab layout at src/app/(tabs)/_layout.tsx registers tab screens. Root stack at src/app/_layout.tsx registers stack screens. Stack.Screen with presentation:'modal' creates full-screen modal. TrackListItem takes { track: Track & { image?: string } } prop. TracksList maps track.artwork to image. FastImage from react-native-fast-image for artwork. Screen layout: ScrollView wrapping in ScreenWrapper, or FlatList.",
+  "relevant_files": [
+    "src/app/_layout.tsx",
+    "src/app/(tabs)/_layout.tsx",
+    "src/app/(tabs)/(songs)/_layout.tsx",
+    "src/app/(tabs)/(songs)/index.tsx",
+    "src/components/TrackListItem.tsx",
+    "src/components/TracksList.tsx",
+    "src/components/screen-wrapper.tsx",
+    "src/types/track.ts",
+    "src/constants/theme.ts",
+    "src/constants/images.ts",
+    "src/context/theme-context.tsx",
+    "src/helpers/filter.ts",
+    "app.json",
+    "package.json"
+  ],
+  "directory_structure": "src/app/ — Expo Router routes and layouts; src/components/ — reusable UI; src/constants/ — theme, images, layout constants; src/context/ — ThemeProvider/useAppTheme; src/helpers/ — filter helpers; src/hooks/ — custom hooks; src/types/ — domain types (Track); assets/data/library.json — static mock data (to be replaced by real device query)"
+}

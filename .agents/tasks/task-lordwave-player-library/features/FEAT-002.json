@@ -1,0 +1,35 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Create the useMediaLibrary hook, update app.json with READ_MEDIA_AUDIO permission and expo-media-library plugin, replace static library.json in the songs screen with the real hook, and create the full-screen modal player screen with route registration. This FEAT depends on FEAT-001 (TrackListItem must already have navigation and the Track type must be correct).",
+  "status": "pending",
+  "steps": [
+    "Create directory src/services/media-library/ if it does not exist.",
+
+    "Create src/services/media-library/useMediaLibrary.ts: a React hook that (a) calls MediaLibrary.usePermissions() from 'expo-media-library' with granularPermissions: ['audio'] to request READ_MEDIA_AUDIO on Android 13+; (b) once permission is granted, runs a Query that filters by MediaType.AUDIO using the new SDK 58 class API: `new Query().eq(AssetField.MEDIA_TYPE, MediaType.AUDIO).exe()` to get Asset objects; (c) for each Asset calls asset.getFilename(), asset.getDuration(), asset.getUri() (these are async getters in SDK 58); (d) maps results to the Track type: { title: filename without extension, url: uri, duration: durationInSeconds, artist: undefined, album: undefined, artwork: undefined }; (e) returns { tracks: Track[], isLoading: boolean, error: string | null, permissionStatus: PermissionStatus | null }. Use useEffect and useState for async loading. Handle permission denied, loading, and error states explicitly. All types must be explicit — no any. Import Track from '@/types/track'. Import Query, AssetField, MediaType, PermissionStatus from 'expo-media-library'.",
+
+    "Update app.json: (a) add 'expo-media-library' as a plugin entry in the plugins array (it needs no extra config for read-only audio access); (b) add 'android.permission.READ_MEDIA_AUDIO' to the android.permissions array. This requires a new dev-client/EAS build to take effect — record that note in docs/NATIVE_CHANGES.md or as a comment.",
+
+    "Create src/app/player.tsx: a full-screen modal player screen. It must: (a) use useAppTheme() for all colors; (b) show a large artwork image (FastImage, fallback to unknownTrackImageUri from @/constants/images); (c) show track title (theme.text, FontSize.lg), artist (theme.textSecondary, FontSize.sm), album (theme.textSecondary, FontSize.xs) — all with numberOfLines={1}; (d) show a custom progress bar built from View components only (no Slider — @react-native-community/slider is NOT in package.json): a horizontal container View with backgroundColor theme.backgroundElement, height 4, borderRadius 2; inside it a filled View with backgroundColor theme.primary and width proportional to progress (use useState for a mock progress 0 to 1 for now since audio playback wiring is out of scope); (e) show playback controls row: skip-back, play/pause toggle, skip-forward using lucide-react-native icons (SkipBack, Play, Pause, SkipForward — already in package.json); (f) read the track to display from expo-router's useLocalSearchParams() — params shape: { title?: string; artist?: string; artwork?: string; duration?: string } (all strings because route params are serialized); convert duration back to number with parseFloat; (g) show a close/dismiss button (ChevronDown icon from lucide-react-native) at the top-left that calls router.back(); (h) use SafeAreaView from react-native-safe-area-context for proper inset handling; (i) background color theme.background filling the whole screen.",
+
+    "Register the player route in src/app/_layout.tsx: add a Stack.Screen for name='player' with options={{ headerShown: false, presentation: 'modal', animation: 'slide_from_bottom' }} inside the existing Stack in RootNavigation.",
+
+    "Update src/app/(tabs)/(songs)/index.tsx: (a) remove the static `import library from '@/assets/data/library.json'`; (b) import useMediaLibrary from '@/services/media-library/useMediaLibrary'; (c) destructure { tracks, isLoading, error, permissionStatus } from the hook; (d) replace `library` with `tracks` in filteredSongs useMemo; (e) show a loading state (ActivityIndicator from react-native, color: theme.primary) when isLoading is true; (f) show a permission-denied message (Text styled with theme.text) when permissionStatus is 'denied'; (g) show an error message when error is non-null; (h) normal TracksList render otherwise.",
+
+    "Update TrackListItem's onPress to pass track data as query params when navigating: router.push({ pathname: '/player', params: { title: track.title, artist: track.artist ?? '', artwork: track.image ?? track.artwork ?? '', duration: String(track.duration ?? '') } }). This must match the params shape read in player.tsx."
+  ],
+  "acceptance_criteria": [
+    "npx tsc --noEmit reports zero TypeScript errors across all changed and new files",
+    "app.json contains 'expo-media-library' in plugins and 'android.permission.READ_MEDIA_AUDIO' in android.permissions",
+    "src/app/player.tsx exists and uses only theme colors (no hardcoded hex) and no @react-native-community/slider",
+    "src/app/_layout.tsx Stack includes a Screen for 'player' with presentation:'modal'",
+    "src/app/(tabs)/(songs)/index.tsx no longer imports library.json and uses useMediaLibrary hook",
+    "src/services/media-library/useMediaLibrary.ts exists with explicit TypeScript types and no 'any'"
+  ],
+  "verification": [
+    "npx tsc --noEmit from c:\\Users\\lxrdf\\Desktop\\LordWave — zero TypeScript errors",
+    "npx expo-doctor from c:\\Users\\lxrdf\\Desktop\\LordWave — no critical config issues"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

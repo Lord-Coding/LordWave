@@ -22,7 +22,8 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.READ_MEDIA_AUDIO"
       ],
       "package": "com.lordsama.LordWave"
     },
@@ -32,6 +33,14 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": false,
+          "savePhotosPermission": false,
+          "isAccessMediaLocationEnabled": true
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -50,7 +59,8 @@
       "expo-sqlite",
       "expo-image",
       "expo-font",
-      "expo-status-bar"
+      "expo-status-bar",
+      "react-native-fast-image"
     ],
     "experiments": {
       "typedRoutes": true,

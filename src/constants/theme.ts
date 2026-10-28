@@ -59,7 +59,7 @@ export const Colors = {
 
 export type ColorScheme = keyof typeof Colors;
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
-export type Theme = typeof Colors.dark;
+export type Theme = typeof Colors.dark | typeof Colors.light;
 
 // ---------------------------------------------------------------------------
 // Typographie & espacements (inchangés)
@@ -128,8 +128,14 @@ export const defaultStyles = (theme: Theme) =>
     },
   });
 
-export const utilsStyle = StyleSheet.create({
-  contentWithTabBar: {
-    paddingBottom: TAB_BAR_HEIGHT,
-  },
-});
+export const utilsStyle = (theme: Theme) =>
+  StyleSheet.create({
+    contentWithTabBar: {
+      paddingBottom: TAB_BAR_HEIGHT,
+    },
+    itemSeparator: {
+      borderColor: theme.textSecondary,
+      borderWidth: StyleSheet.hairlineWidth,
+      opacity: 0.3,
+    },
+  });
