@@ -3,18 +3,21 @@ import { ScreenWrapper } from "@/components/screen-wrapper";
 import { TracksList } from "@/components/TracksList";
 import { Spacing } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
-import { getPlaylistTracks, type PlaylistTrackRow } from "@/database/repositories/playlistRepository";
+import {
+    getPlaylistTracks,
+    type PlaylistTrackRow,
+} from "@/database/repositories/playlistRepository";
 import { usePlayer } from "@/stores/PlayerProvider";
 import { Track } from "@/types/track";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,6 +27,7 @@ function playlistRowToTrack(row: PlaylistTrackRow): Track {
     title: row.trackTitle,
     artist: row.trackArtist ?? undefined,
     album: row.trackAlbum ?? undefined,
+    artwork: row.trackArtwork ?? undefined,
   };
 }
 

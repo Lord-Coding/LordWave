@@ -1,11 +1,11 @@
+import { Track } from "@/types/track";
 import {
-  useAudioPlaylist,
-  useAudioPlaylistStatus,
-  type AudioPlaylistLoopMode,
-} from 'expo-audio';
-import { useCallback, useState, type ReactNode } from 'react';
-import { Track } from '@/types/track';
-import { PlayerContext, type PlayerContextValue } from './playerStore';
+    useAudioPlaylist,
+    useAudioPlaylistStatus,
+    type AudioPlaylistLoopMode,
+} from "expo-audio";
+import { useCallback, useRef, useState, type ReactNode } from "react";
+import { PlayerContext, type PlayerContextValue } from "./playerStore";
 
 /** Fisher-Yates shuffle — retourne un nouveau tableau mélangé */
 function shuffleArray<T>(arr: T[]): T[] {
@@ -27,9 +27,18 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
   /** Ordre original avant shuffle (pour restaurer si on désactive) */
   const [originalTracks, setOriginalTracks] = useState<Track[]>([]);
 
+  /**
+   * Refs miroir de tracks et originalTracks.
+   * Utilisées dans toggleShuffle pour éviter les closures périmées :
+   * setIsShuffled(prev => ...) est un updater asynchrone qui lit ces refs
+   * pour obtenir les valeurs actuelles au moment du commit React.
+   */
+  const tracksRef = useRef<Track[]>([]);
+  const originalTracksRef = useRef<Track[]>([]);
+
   const playlist = useAudioPlaylist({
     sources: [],
-    loop: 'none',
+    loop: "none",
     updateInterval: 250,
   });
 
@@ -40,6 +49,9 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
       const orderedTracks = isShuffled ? shuffleArray(newTracks) : newTracks;
       setOriginalTracks(newTracks);
       setTracks(orderedTracks);
+      // Synchroniser les refs immédiatement pour que toggleShuffle ait des valeurs fraîches
+      originalTracksRef.current = newTracks;
+      tracksRef.current = orderedTracks;
 
       playlist.clear();
       orderedTracks.forEach((t) => {
@@ -61,15 +73,22 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
   const toggleShuffle = useCallback((): void => {
     setIsShuffled((prev) => {
       const next = !prev;
-      const currentTrackUrl = tracks[status.currentIndex]?.url;
+      // Lire depuis les refs pour avoir les valeurs actuelles au moment du commit,
+      // et non la closure capturée à la création du callback.
+      const currentTracks = tracksRef.current;
+      const currentOriginalTracks = originalTracksRef.current;
+      const currentTrackUrl = currentTracks[status.currentIndex]?.url;
 
       if (next) {
         // Activer le shuffle : mélanger autour du morceau courant
-        const rest = originalTracks.filter((t) => t.url !== currentTrackUrl);
+        const rest = currentOriginalTracks.filter(
+          (t) => t.url !== currentTrackUrl,
+        );
         const shuffled = shuffleArray(rest);
-        const currentTrack = tracks[status.currentIndex];
+        const currentTrack = currentTracks[status.currentIndex];
         const newQueue = currentTrack ? [currentTrack, ...shuffled] : shuffled;
 
+        tracksRef.current = newQueue;
         setTracks(newQueue);
         playlist.clear();
         newQueue.forEach((t) => {
@@ -80,12 +99,13 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
       } else {
         // Désactiver le shuffle : revenir à l'ordre original
         const restoredIndex = currentTrackUrl
-          ? originalTracks.findIndex((t) => t.url === currentTrackUrl)
+          ? currentOriginalTracks.findIndex((t) => t.url === currentTrackUrl)
           : status.currentIndex;
 
-        setTracks(originalTracks);
+        tracksRef.current = currentOriginalTracks;
+        setTracks(currentOriginalTracks);
         playlist.clear();
-        originalTracks.forEach((t) => {
+        currentOriginalTracks.forEach((t) => {
           if (t.url) playlist.add({ uri: t.url, name: t.title });
         });
         playlist.skipTo(Math.max(0, restoredIndex));
@@ -94,7 +114,7 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
 
       return next;
     });
-  }, [playlist, tracks, originalTracks, status]);
+  }, [playlist, status]);
 
   const setLoop = useCallback(
     (mode: AudioPlaylistLoopMode): void => {
@@ -130,4 +150,4 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
 }
 
 // Ré-export pour un import unique
-export { usePlayer } from './playerStore';
+export { usePlayer } from "./playerStore";
