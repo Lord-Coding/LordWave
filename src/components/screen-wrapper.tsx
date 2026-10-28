@@ -2,10 +2,12 @@ import {
     ScrollView,
     ScrollViewProps,
     StyleProp,
+    View,
     ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { MaxContentWidth } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 
 const TAB_CONTENT_HEIGHT = 60;
@@ -36,12 +38,22 @@ export function ScreenWrapper({
           paddingTop,
           paddingHorizontal,
           paddingBottom,
+          flexGrow: 1,
         },
         contentStyle,
       ]}
       {...rest}
     >
-      {children}
+      <View
+        style={{
+          maxWidth: MaxContentWidth,
+          width: "100%",
+          alignSelf: "center",
+          flex: 1,
+        }}
+      >
+        {children}
+      </View>
     </ScrollView>
   );
 }

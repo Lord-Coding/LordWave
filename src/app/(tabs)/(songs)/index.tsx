@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/EmptyState";
 import { ScreenWrapper } from "@/components/screen-wrapper";
 import { TracksList } from "@/components/TracksList";
 import { Spacing } from "@/constants/theme";
@@ -76,11 +77,11 @@ const SongScreen = () => {
   if (filteredTracks.length === 0) {
     return (
       <ScreenWrapper>
-        <View style={styles.centered}>
-          <Text style={[styles.message, { color: theme.textSecondary }]}>
-            Aucun fichier audio trouvé sur cet appareil.
-          </Text>
-        </View>
+        <EmptyState
+          icon="library-outline"
+          title="Bibliothèque vide"
+          subtitle="Aucun fichier audio trouvé sur cet appareil"
+        />
       </ScreenWrapper>
     );
   }
