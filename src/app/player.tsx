@@ -1,39 +1,87 @@
 import { unknownTrackImageUri } from "@/constants/images";
 import { FontSize, Spacing } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
+import { usePlayer } from "@/stores/PlayerProvider";
 import { formatDuration } from "@/utils/formatDuration";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { type AudioPlaylistLoopMode } from "expo-audio";
+import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import FastImage from "react-native-fast-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type PlayerParams = {
-  title: string;
-  artist: string;
-  artwork: string;
-  duration: string;
+const LOOP_CYCLE: Record<AudioPlaylistLoopMode, AudioPlaylistLoopMode> = {
+  none: "single",
+  single: "all",
+  all: "none",
 };
 
 const PlayerScreen = () => {
   const theme = useAppTheme();
   const router = useRouter();
-  const params = useLocalSearchParams<PlayerParams>();
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  const {
+    tracks,
+    currentIndex,
+    currentTime,
+    duration,
+    playing,
+    loop,
+    isShuffled,
+    play,
+    pause,
+    next,
+    previous,
+    seekTo,
+    setLoop,
+    toggleShuffle,
+  } = usePlayer();
 
-  const duration = parseFloat(params.duration ?? "0");
+  const currentTrack = tracks[currentIndex] ?? null;
+
+  if (!currentTrack) {
+    return (
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: theme.background }]}
+      >
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityLabel="Fermer le lecteur"
+          >
+            <Ionicons name="chevron-down" size={28} color={theme.text} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.emptyContainer}>
+          <Ionicons
+            name="musical-notes-outline"
+            size={72}
+            color={theme.textSecondary}
+            style={{ opacity: 0.4 }}
+          />
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+            Aucun morceau en lecture
+          </Text>
+          <Text style={[styles.emptySubText, { color: theme.textSecondary }]}>
+            Sélectionnez un morceau dans votre bibliothèque
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const artworkUri =
-    params.artwork && params.artwork.length > 0
-      ? params.artwork
+    currentTrack.artwork && currentTrack.artwork.length > 0
+      ? currentTrack.artwork
       : unknownTrackImageUri;
+
+  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      {/* Bouton fermer */}
       <View style={styles.topBar}>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -44,7 +92,6 @@ const PlayerScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Pochette */}
       <View style={styles.artworkContainer}>
         <FastImage
           source={{ uri: artworkUri, priority: FastImage.priority.normal }}
@@ -52,25 +99,20 @@ const PlayerScreen = () => {
         />
       </View>
 
-      {/* Titre + Artiste */}
       <View style={styles.infoContainer}>
-        <Text
-          numberOfLines={1}
-          style={[styles.title, { color: theme.text }]}
-        >
-          {params.title ?? "Titre inconnu"}
+        <Text numberOfLines={1} style={[styles.title, { color: theme.text }]}>
+          {currentTrack.title}
         </Text>
-        {params.artist ? (
+        {currentTrack.artist ? (
           <Text
             numberOfLines={1}
             style={[styles.artist, { color: theme.textSecondary }]}
           >
-            {params.artist}
+            {currentTrack.artist}
           </Text>
         ) : null}
       </View>
 
-      {/* Barre de progression */}
       <View style={styles.progressSection}>
         <View
           style={[
@@ -81,15 +123,16 @@ const PlayerScreen = () => {
           <View
             style={[
               styles.progressFill,
-              { backgroundColor: theme.primary, width: "0%" },
+              {
+                backgroundColor: theme.primary,
+                width: `${progressPercent}%`,
+              },
             ]}
           />
         </View>
-
-        {/* Temps */}
         <View style={styles.timeRow}>
           <Text style={[styles.timeText, { color: theme.textSecondary }]}>
-            {formatDuration(0)}
+            {formatDuration(currentTime)}
           </Text>
           <Text style={[styles.timeText, { color: theme.textSecondary }]}>
             {formatDuration(duration)}
@@ -97,9 +140,9 @@ const PlayerScreen = () => {
         </View>
       </View>
 
-      {/* Contrôles */}
       <View style={styles.controls}>
         <TouchableOpacity
+          onPress={() => previous()}
           accessibilityLabel="Morceau précédent"
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
@@ -107,21 +150,19 @@ const PlayerScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => setIsPlaying((p) => !p)}
-          style={[
-            styles.playButton,
-            { backgroundColor: theme.primary },
-          ]}
-          accessibilityLabel={isPlaying ? "Pause" : "Lecture"}
+          onPress={() => (playing ? pause() : play())}
+          style={[styles.playButton, { backgroundColor: theme.primary }]}
+          accessibilityLabel={playing ? "Pause" : "Lecture"}
         >
           <Ionicons
-            name={isPlaying ? "pause" : "play"}
+            name={playing ? "pause" : "play"}
             size={32}
             color="#ffffff"
           />
         </TouchableOpacity>
 
         <TouchableOpacity
+          onPress={() => next()}
           accessibilityLabel="Morceau suivant"
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
@@ -129,14 +170,43 @@ const PlayerScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Shuffle + Repeat */}
       <View style={styles.extras}>
-        <TouchableOpacity accessibilityLabel="Aléatoire">
-          <Ionicons name="shuffle" size={22} color={theme.textSecondary} />
+        <TouchableOpacity
+          onPress={() => toggleShuffle()}
+          accessibilityLabel={isShuffled ? "Desactiver aleatoire" : "Activer aleatoire"}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Ionicons
+            name="shuffle"
+            size={22}
+            color={isShuffled ? theme.primary : theme.textSecondary}
+          />
         </TouchableOpacity>
-        <TouchableOpacity accessibilityLabel="Répétition">
-          <Ionicons name="repeat" size={22} color={theme.textSecondary} />
-        </TouchableOpacity>
+
+        <View style={styles.loopContainer}>
+          <TouchableOpacity
+            onPress={() => setLoop(LOOP_CYCLE[loop])}
+            accessibilityLabel={
+              loop === "none"
+                ? "Repetition desactivee"
+                : loop === "single"
+                  ? "Repetition du morceau"
+                  : "Repetition de la liste"
+            }
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons
+              name="repeat"
+              size={22}
+              color={loop !== "none" ? theme.primary : theme.textSecondary}
+            />
+          </TouchableOpacity>
+          {loop === "single" && (
+            <Text style={[styles.loopBadgeText, { color: theme.primary }]}>
+              1
+            </Text>
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -210,6 +280,33 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: Spacing.three,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.four,
+  },
+  emptyText: {
+    fontSize: FontSize.base,
+    fontWeight: "600",
+    marginTop: 16,
+    textAlign: "center",
+  },
+  emptySubText: {
+    fontSize: FontSize.sm,
+    marginTop: 8,
+    textAlign: "center",
+    opacity: 0.7,
+  },
+  loopContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    columnGap: 2,
+  },
+  loopBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
   },
 });
 

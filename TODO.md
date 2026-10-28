@@ -12,8 +12,8 @@
 - [x] Configurer `expo-audio` pour la lecture en arrière-plan.
 - [x] Définir le nom de l'application, son identifiant Android, son icône et son écran de lancement.
 - [x] Installer les dépendances avec `npx expo install`.
-- [ ] Vérifier l'organisation des routes et des écrans Expo Router.
-- [ ] Vérifier la configuration native après toute modification d'un plugin ou d'une dépendance native.
+- [x] Vérifier l'organisation des routes et des écrans Expo Router.
+- [x] Vérifier la configuration native après toute modification d'un plugin ou d'une dépendance native.
 - [ ] Utiliser Git pour conserver l'historique des modifications.
 - [ ] Lancer régulièrement `npx expo-doctor` et corriger les erreurs importantes.
 
@@ -26,6 +26,8 @@
 - [x] Migrer `layout.ts` de `token.ts` vers `theme.ts`.
 - [x] Supprimer `src/constants/token.ts` une fois tous les imports migrés.
 - [x] Supprimer ou vider `src/styles/index.ts` une fois tous les imports migrés.
+- [x] Corriger le type `Theme` pour accepter les thèmes clair et sombre (`typeof Colors.dark | typeof Colors.light`).
+- [x] Transformer `stackScreenWithSearchBar` en fonction recevant le thème (headers adaptatifs).
 
 ### Tab-bar
 
@@ -60,9 +62,11 @@
 
 ### Accès à la bibliothèque locale
 
-- [ ] Demander les autorisations Android nécessaires au bon moment.
-- [ ] Parcourir les fichiers audio accessibles sur le téléphone.
-- [ ] Afficher une liste de morceaux avec titre, artiste, album et durée.
+- [x] Demander les autorisations Android nécessaires (`READ_MEDIA_AUDIO`, plugin `expo-media-library` dans `app.json`).
+- [x] Parcourir les fichiers audio accessibles sur le téléphone via `useMediaLibrary` (API Query SDK 58).
+- [x] Afficher une liste de morceaux avec titre et durée.
+- [x] Gérer les états : chargement, permission refusée, erreur, bibliothèque vide.
+- [x] Afficher artiste et album (nécessite lecture des métadonnées ID3).
 - [ ] Gérer les métadonnées manquantes (`Artiste inconnu`, etc.).
 - [ ] Gérer les fichiers déplacés, supprimés ou inaccessibles.
 - [ ] Ajouter une action pour rescanner la bibliothèque.
@@ -71,15 +75,19 @@
 ### Pochettes
 
 - [ ] Récupérer la pochette intégrée au fichier audio.
-- [ ] Afficher la pochette sur l'écran lecteur.
+- [x] Prévoir une illustration de remplacement (`unknown_artist.png`, `unknown_track.png`).
+- [x] Afficher la pochette sur l'écran lecteur.
 - [ ] Afficher la pochette dans la notification et l'écran verrouillé.
-- [ ] Prévoir une illustration de remplacement.
 - [ ] Mettre en cache les pochettes.
 
 ### Lecteur audio complet
 
-- [ ] Passer au morceau précédent / suivant.
-- [ ] Modes répétition (désactivée / morceau / liste) et aléatoire.
+- [x] Créer l'écran lecteur modal plein écran (`src/app/player.tsx`) avec pochette, titre, artiste, barre de progression, contrôles play/pause/skip, shuffle, repeat.
+- [x] Naviguer vers le lecteur au tap sur un morceau (`TrackListItem` → `router.push('/player')`).
+- [x] Enregistrer la route `player` comme modal dans `_layout.tsx`.
+- [x] Brancher `expo-audio` sur les contrôles du lecteur (lecture réelle).
+- [x] Passer au morceau précédent / suivant.
+- [x] Modes répétition (désactivée / morceau / liste) et aléatoire.
 - [ ] Gérer les appels, écouteurs débranchés et interruptions audio.
 - [ ] Éviter les doubles lectures ou plusieurs instances du lecteur.
 - [ ] Restaurer l'état du lecteur après navigation.
@@ -91,14 +99,14 @@
 - [ ] Écran d'accueil avec les morceaux récemment écoutés.
 - [ ] Onglet « Tous les morceaux ».
 - [ ] Vues par artiste, album et dossier.
-- [ ] Recherche par titre, artiste et album.
+- [x] Recherche par titre, artiste et album.
 - [ ] Tri par titre, artiste, album, durée et date d'ajout.
-- [ ] Favoris.
-- [ ] Création, renommage et suppression de playlists.
-- [ ] Ajout et retrait de morceaux dans une playlist.
+- [x] Favoris.
+- [x] Création, renommage et suppression de playlists.
+- [x] Ajout et retrait de morceaux dans une playlist.
 - [ ] File d'attente de lecture + menu « Lire ensuite ».
 - [ ] Historique d'écoute.
-- [ ] Sauvegarde locale des playlists et préférences avec SQLite.
+- [x] Sauvegarde locale des playlists et préférences avec SQLite.
 
 ---
 
@@ -108,15 +116,15 @@
 
 - [ ] Créer une identité visuelle cohérente pour LordWave.
 - [ ] Concevoir les écrans : accueil, bibliothèque, lecteur, recherche, playlists, favoris, paramètres.
-- [ ] Prévoir les états : chargement, liste vide, permission refusée, erreur de lecture.
+- [x] Prévoir les états : chargement, liste vide, permission refusée, erreur de lecture.
 - [ ] Assurer la lisibilité sur petits et grands écrans.
-- [ ] Ajouter des animations sobres sans ralentir la lecture.
-- [ ] Ajouter les libellés d'accessibilité aux boutons importants.
+- [x] Ajouter des animations sobres sans ralentir la lecture. _(transitions slide_from_right, FadeInDown sur listes)_
+- [x] Ajouter les libellés d'accessibilité aux boutons importants (lecteur, tab-bar).
 - [ ] Tester la navigation avec le bouton Retour Android.
 - [ ] Ajouter un `headerRight` avec icône settings ou recherche dans les headers.
 - [ ] Personnaliser la police du titre du header avec `headerTitleStyle.fontFamily`.
 - [ ] Créer des états vides stylés (illustration + texte) pour la bibliothèque vide.
-- [ ] Créer un hook `useThemedStyles(stylesheet)` _(fait)_ — l'utiliser dans tous les nouveaux composants.
+- [x] Créer un hook `useThemedStyles(stylesheet)` — utilisé dans les nouveaux composants.
 
 ### Tests & Robustesse
 
@@ -132,9 +140,9 @@
 
 ### APK autonome
 
-- [ ] Configurer `eas.json` avec un profil `preview` qui produit un APK.
-- [ ] Générer l'APK avec `eas build --platform android --profile preview`.
-- [ ] Installer et tester l'APK sur appareil réel (sans serveur Metro).
+- [x] Configurer `eas.json` avec un profil `preview` qui produit un APK.
+- [x] Corriger le fichier `assets/covers/unknown_artist.png` (JPEG déguisé en PNG — corrigé avant le build EAS).
+- [ ] Générer l'APK avec `eas build --platform android --profile preview` et l'installer sur appareil réel.
 - [ ] Vérifier le fonctionnement hors ligne, en arrière-plan et sur l'écran verrouillé.
 - [ ] Garder le profil `production` en AAB pour la publication Play Store.
 
@@ -143,15 +151,17 @@
 ## 📋 Ordre de réalisation conseillé
 
 1. [x] Prototype de lecture d'un fichier audio sélectionné manuellement.
-2. [ ] Lecture en arrière-plan + notification + écran verrouillé sur appareil réel.
-3. [ ] Bibliothèque locale complète et métadonnées.
-4. [ ] Pochettes et illustrations de remplacement.
-5. [ ] File de lecture, précédent/suivant, répétition et aléatoire.
-6. [ ] Favoris, playlists, historique et SQLite.
-7. [ ] Recherche, tri et navigation complète.
-8. [ ] Finition visuelle et accessibilité.
-9. [ ] Tests sur appareil réel et corrections.
-10. [ ] APK autonome de test, puis préparation de la version de publication.
+2. [x] Bibliothèque locale : hook `useMediaLibrary`, permissions, liste de morceaux.
+3. [x] Écran lecteur modal (design statique).
+4. [x] Brancher `expo-audio` sur le lecteur (lecture réelle, contrôles, background).
+5. [ ] Lecture en arrière-plan + notification + écran verrouillé sur appareil réel.
+6. [ ] Métadonnées complètes (artiste, album, pochette via ID3).
+7. [ ] File de lecture, précédent/suivant, répétition et aléatoire.
+8. [ ] Favoris, playlists, historique et SQLite.
+9. [ ] Recherche, tri et navigation complète.
+10. [ ] Finition visuelle et accessibilité.
+11. [ ] Tests sur appareil réel et corrections.
+12. [ ] APK autonome de test, puis préparation de la version de publication.
 
 ---
 

@@ -4,14 +4,14 @@ import { Platform, StyleSheet } from "react-native";
 // Palette de couleurs
 // ---------------------------------------------------------------------------
 
-/** Couleur primaire : #b155e6
- *  tint  = version plus claire (+30% luminosité)
- *  shade = version plus sombre (-30% luminosité)
+/** Couleur primaire : #F59127 (orange)
+ *  tint  = version plus claire (~+25% luminosité)
+ *  shade = version plus sombre (~-20% luminosité)
  */
 export const palette = {
-  primary: "#b155e6",
-  primaryTint: "#cc88ee", // clair — hover, highlight, icônes actives
-  primaryShade: "#7a2fa1", // sombre — pressed, bordures, accents forts
+  primary: "#F59127",
+  primaryTint: "#F8B46A", // orange clair — hover, highlight, icônes actives
+  primaryShade: "#C47015", // orange sombre — pressed, bordures, accents forts
 
   secondary: "#6f2e94", // violet profond — éléments secondaires
   secondaryTint: "#9a5bbb",

@@ -1,33 +1,60 @@
 import { unknownArtistImageUri } from "@/constants/images";
 import { defaultStyles, FontSize, palette } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
+import { usePlayer } from "@/stores/PlayerProvider";
 import { Track } from "@/types/track";
 import { formatDuration } from "@/utils/formatDuration";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, TouchableHighlight, View } from "react-native";
+import {
+    StyleSheet,
+    Text,
+    TouchableHighlight,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import FastImage from "react-native-fast-image";
 
 export type TrackListItemProps = {
   track: Track & { image?: string };
+  /** Toute la queue pour loadQueue (optionnel) */
+  allTracks?: Track[];
+  /** Index de ce track dans allTracks (optionnel) */
+  trackIndex?: number;
+  /** Si le cœur est plein ou vide */
+  isFavorite?: boolean;
+  /** Callback quand on presse le bouton favori */
+  onFavoritePress?: () => void;
 };
 
-export const TrackListItem = ({ track }: TrackListItemProps) => {
+export const TrackListItem = ({
+  track,
+  allTracks,
+  trackIndex,
+  isFavorite,
+  onFavoritePress,
+}: TrackListItemProps) => {
   const theme = useAppTheme();
   const router = useRouter();
+  const { loadQueue } = usePlayer();
   const isActiveTrack = false;
 
   const handlePress = () => {
-    router.push({
-      // Le cast est nécessaire car les types de routes typedRoutes
-      // sont régénérés au prochain démarrage du serveur Metro
-      pathname: "/player" as never,
-      params: {
-        title: track.title,
-        artist: track.artist ?? "",
-        artwork: track.image ?? track.artwork ?? "",
-        duration: String(track.duration ?? ""),
-      },
-    });
+    if (allTracks !== undefined && trackIndex !== undefined) {
+      loadQueue(allTracks, trackIndex);
+      router.push("/player" as never);
+    } else {
+      // Comportement de compatibilité ascendante
+      router.push({
+        pathname: "/player" as never,
+        params: {
+          title: track.title,
+          artist: track.artist ?? "",
+          artwork: track.image ?? track.artwork ?? "",
+          duration: String(track.duration ?? ""),
+        },
+      });
+    }
   };
 
   return (
@@ -84,6 +111,24 @@ export const TrackListItem = ({ track }: TrackListItemProps) => {
             {formatDuration(track.duration)}
           </Text>
         )}
+
+        {/* Bouton favori (optionnel) */}
+        {onFavoritePress !== undefined && (
+          <TouchableOpacity
+            onPress={onFavoritePress}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityLabel={
+              isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"
+            }
+            style={styles.favoriteButton}
+          >
+            <Ionicons
+              name={isFavorite ? "heart" : "heart-outline"}
+              size={18}
+              color={isFavorite ? theme.primary : theme.textSecondary}
+            />
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableHighlight>
   );
@@ -104,5 +149,8 @@ const styles = StyleSheet.create({
   },
   trackInfo: {
     flex: 1,
+  },
+  favoriteButton: {
+    paddingLeft: 8,
   },
 });

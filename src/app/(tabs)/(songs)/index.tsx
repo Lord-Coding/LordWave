@@ -3,9 +3,10 @@ import { ScreenWrapper } from "@/components/screen-wrapper";
 import { TracksList } from "@/components/TracksList";
 import { Spacing } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
-import { trackTitleFilter } from "@/helpers/filter";
+import { trackFilter } from "@/helpers/filter";
 import { useNavigationSearch } from "@/hooks/useNavigationSearch";
 import { useMediaLibrary } from "@/services/media-library/useMediaLibrary";
+import { useTrackMetadata } from "@/services/media-library/useTrackMetadata";
 import { PermissionStatus } from "expo-media-library";
 import { useMemo } from "react";
 import {
@@ -23,16 +24,18 @@ const SongScreen = () => {
 
   const search = useNavigationSearch({
     searchBarOptions: {
-      placeholder: "Rechercher dans les chansons",
+      placeholder: "Rechercher par titre, artiste ou album",
     },
   });
 
   const { tracks, isLoading, error, permissionStatus } = useMediaLibrary();
+  const { enrichedTracks, isLoading: isMetadataLoading } =
+    useTrackMetadata(tracks);
 
   const filteredTracks = useMemo(() => {
-    if (!search) return tracks;
-    return tracks.filter(trackTitleFilter(search));
-  }, [tracks, search]);
+    if (!search) return enrichedTracks;
+    return enrichedTracks.filter(trackFilter(search));
+  }, [enrichedTracks, search]);
 
   if (isLoading) {
     return (
@@ -94,6 +97,14 @@ const SongScreen = () => {
       >
         <TracksList tracks={filteredTracks} scrollEnabled={false} />
       </ScrollView>
+      {isMetadataLoading && (
+        <View style={styles.metadataLoadingBar}>
+          <ActivityIndicator size="small" color={theme.primary} />
+          <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
+            Chargement des métadonnées…
+          </Text>
+        </View>
+      )}
     </ScreenWrapper>
   );
 };
@@ -119,6 +130,16 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "600",
     fontSize: 16,
+  },
+  metadataLoadingBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    columnGap: 8,
+  },
+  metadataText: {
+    fontSize: 12,
   },
 });
 
