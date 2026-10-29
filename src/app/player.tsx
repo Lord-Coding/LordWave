@@ -1,4 +1,4 @@
-import { unknownTrackImageUri } from "@/constants/images";
+import { unknownTrackImage } from "@/constants/images";
 import { FontSize, Spacing } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { usePlayer } from "@/stores/PlayerProvider";
@@ -32,7 +32,6 @@ const PlayerScreen = () => {
     pause,
     next,
     previous,
-    seekTo,
     setLoop,
     toggleShuffle,
   } = usePlayer();
@@ -71,10 +70,10 @@ const PlayerScreen = () => {
     );
   }
 
-  const artworkUri =
-    currentTrack.artwork && currentTrack.artwork.length > 0
-      ? currentTrack.artwork
-      : unknownTrackImageUri;
+  // Source artwork : base64 si disponible, sinon fallback require()
+  const artworkSource = currentTrack.artwork && currentTrack.artwork.length > 0
+    ? { uri: currentTrack.artwork, priority: FastImage.priority.normal }
+    : unknownTrackImage;
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -94,7 +93,7 @@ const PlayerScreen = () => {
 
       <View style={styles.artworkContainer}>
         <FastImage
-          source={{ uri: artworkUri, priority: FastImage.priority.normal }}
+          source={artworkSource}
           style={styles.artwork}
         />
       </View>

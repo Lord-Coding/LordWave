@@ -1,4 +1,4 @@
-import { unknownArtistImageUri } from "@/constants/images";
+import { unknownArtistImage } from "@/constants/images";
 import { defaultStyles, FontSize, palette } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { usePlayer } from "@/stores/PlayerProvider";
@@ -7,11 +7,11 @@ import { formatDuration } from "@/utils/formatDuration";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
-    StyleSheet,
-    Text,
-    TouchableHighlight,
-    TouchableOpacity,
-    View,
+  StyleSheet,
+  Text,
+  TouchableHighlight,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import FastImage from "react-native-fast-image";
 
@@ -44,28 +44,22 @@ export const TrackListItem = ({
       loadQueue(allTracks, trackIndex);
       router.push("/player" as never);
     } else {
-      // Comportement de compatibilité ascendante
-      router.push({
-        pathname: "/player" as never,
-        params: {
-          title: track.title,
-          artist: track.artist ?? "",
-          artwork: track.image ?? track.artwork ?? "",
-          duration: String(track.duration ?? ""),
-        },
-      });
+      router.push("/player" as never);
     }
   };
+
+  // Source artwork : base64 ou URI si disponible, sinon fallback require()
+  const artworkUri = track.artwork ?? track.image;
+  const artworkSource = artworkUri
+    ? { uri: artworkUri, priority: FastImage.priority.normal }
+    : unknownArtistImage;
 
   return (
     <TouchableHighlight onPress={handlePress} underlayColor="transparent">
       <View style={styles.trackItemContainer}>
         {/* Pochette */}
         <FastImage
-          source={{
-            uri: track.image ?? track.artwork ?? unknownArtistImageUri,
-            priority: FastImage.priority.normal,
-          }}
+          source={artworkSource}
           style={{
             ...styles.trackArtworkImage,
             opacity: isActiveTrack ? 0.6 : 1,

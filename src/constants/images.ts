@@ -1,7 +1,10 @@
-import unknownArtistImage from "@/assets/covers/unknown_artist.png"
-import unknownTrackImage from "@/assets/covers/unknown_track.png"
-import { Image } from "react-native"
+// Images statiques — importées comme requires, compatibles web/serveur et Android.
+// Ne pas appeler Image.resolveAssetSource() ici : cette API n'existe pas dans
+// l'environnement Node.js utilisé par Expo Router lors de l'export serveur (EAS Build).
 
-export const unknownTrackImageUri = Image.resolveAssetSource(unknownTrackImage)?.uri
-export const unknownArtistImageUri = Image.resolveAssetSource(unknownArtistImage)?.uri
-
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+export const unknownArtistImage =
+  require("@/assets/covers/unknown_artist.png") as number;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+export const unknownTrackImage =
+  require("@/assets/covers/unknown_track.png") as number;
