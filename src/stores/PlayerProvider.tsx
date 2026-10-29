@@ -70,6 +70,15 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
     [playlist, isShuffled],
   );
 
+  /**
+   * Ref miroir de status pour les callbacks qui lisent currentIndex et playing.
+   * Évite d'avoir status dans les dépendances de useCallback, ce qui causerait
+   * une recréation du callback toutes les 250ms (fréquence de useAudioPlaylistStatus).
+   */
+  const statusRef = useRef(status);
+  // Toujours synchroniser la ref avant que les callbacks ne l'utilisent
+  statusRef.current = status;
+
   const toggleShuffle = useCallback((): void => {
     setIsShuffled((prev) => {
       const next = !prev;
@@ -77,7 +86,8 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
       // et non la closure capturée à la création du callback.
       const currentTracks = tracksRef.current;
       const currentOriginalTracks = originalTracksRef.current;
-      const currentTrackUrl = currentTracks[status.currentIndex]?.url;
+      const currentStatus = statusRef.current;
+      const currentTrackUrl = currentTracks[currentStatus.currentIndex]?.url;
 
       if (next) {
         // Activer le shuffle : mélanger autour du morceau courant
@@ -85,7 +95,7 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
           (t) => t.url !== currentTrackUrl,
         );
         const shuffled = shuffleArray(rest);
-        const currentTrack = currentTracks[status.currentIndex];
+        const currentTrack = currentTracks[currentStatus.currentIndex];
         const newQueue = currentTrack ? [currentTrack, ...shuffled] : shuffled;
 
         tracksRef.current = newQueue;
@@ -95,12 +105,12 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
           if (t.url) playlist.add({ uri: t.url, name: t.title });
         });
         playlist.skipTo(0);
-        if (status.playing) playlist.play();
+        if (currentStatus.playing) playlist.play();
       } else {
         // Désactiver le shuffle : revenir à l'ordre original
         const restoredIndex = currentTrackUrl
           ? currentOriginalTracks.findIndex((t) => t.url === currentTrackUrl)
-          : status.currentIndex;
+          : currentStatus.currentIndex;
 
         tracksRef.current = currentOriginalTracks;
         setTracks(currentOriginalTracks);
@@ -109,12 +119,12 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
           if (t.url) playlist.add({ uri: t.url, name: t.title });
         });
         playlist.skipTo(Math.max(0, restoredIndex));
-        if (status.playing) playlist.play();
+        if (currentStatus.playing) playlist.play();
       }
 
       return next;
     });
-  }, [playlist, status]);
+  }, [playlist, tracksRef, originalTracksRef]); // status retiré — lu via statusRef
 
   const setLoop = useCallback(
     (mode: AudioPlaylistLoopMode): void => {

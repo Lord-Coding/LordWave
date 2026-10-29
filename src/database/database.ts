@@ -30,5 +30,8 @@ async function runMigrations(): Promise<void> {
 
 export async function initDatabase(): Promise<void> {
   await db.execAsync(`PRAGMA journal_mode = WAL;`);
+  // Activer l'enforcement des clés étrangères (désactivé par défaut dans SQLite).
+  // Sans cela, ON DELETE CASCADE sur playlist_tracks est silencieusement ignoré.
+  await db.execAsync(`PRAGMA foreign_keys = ON;`);
   await runMigrations();
 }
