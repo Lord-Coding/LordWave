@@ -6,7 +6,14 @@ import { formatDuration } from "@/utils/formatDuration";
 import { Ionicons } from "@expo/vector-icons";
 import { type AudioPlaylistLoopMode } from "expo-audio";
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useRef } from "react";
+import {
+    GestureResponderEvent,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import FastImage from "react-native-fast-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -32,11 +39,22 @@ const PlayerScreen = () => {
     pause,
     next,
     previous,
+    seekTo,
     setLoop,
     toggleShuffle,
   } = usePlayer();
 
   const currentTrack = tracks[currentIndex] ?? null;
+
+  // BUG-002 — barre de progression interactive
+  const progressTrackWidth = useRef(0);
+
+  const handleProgressPress = (e: GestureResponderEvent) => {
+    if (progressTrackWidth.current <= 0 || duration <= 0) return;
+    const x = e.nativeEvent.locationX;
+    const ratio = Math.max(0, Math.min(1, x / progressTrackWidth.current));
+    seekTo(ratio * duration);
+  };
 
   if (!currentTrack) {
     return (
@@ -70,10 +88,10 @@ const PlayerScreen = () => {
     );
   }
 
-  // Source artwork : base64 si disponible, sinon fallback require()
-  const artworkSource = currentTrack.artwork && currentTrack.artwork.length > 0
-    ? { uri: currentTrack.artwork, priority: FastImage.priority.normal }
-    : unknownTrackImage;
+  const artworkSource =
+    currentTrack.artwork && currentTrack.artwork.length > 0
+      ? { uri: currentTrack.artwork, priority: FastImage.priority.normal }
+      : unknownTrackImage;
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -81,6 +99,7 @@ const PlayerScreen = () => {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
     >
+      {/* Bouton fermer */}
       <View style={styles.topBar}>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -91,13 +110,12 @@ const PlayerScreen = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Pochette */}
       <View style={styles.artworkContainer}>
-        <FastImage
-          source={artworkSource}
-          style={styles.artwork}
-        />
+        <FastImage source={artworkSource} style={styles.artwork} />
       </View>
 
+      {/* Titre + Artiste */}
       <View style={styles.infoContainer}>
         <Text numberOfLines={1} style={[styles.title, { color: theme.text }]}>
           {currentTrack.title}
@@ -112,23 +130,45 @@ const PlayerScreen = () => {
         ) : null}
       </View>
 
+      {/* Barre de progression — BUG-002 : interactive via TouchableOpacity */}
       <View style={styles.progressSection}>
-        <View
-          style={[
-            styles.progressTrack,
-            { backgroundColor: theme.backgroundElement },
-          ]}
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={handleProgressPress}
+          accessibilityLabel="Barre de progression"
+          accessibilityRole="adjustable"
         >
           <View
             style={[
-              styles.progressFill,
-              {
-                backgroundColor: theme.primary,
-                width: `${progressPercent}%`,
-              },
+              styles.progressTrack,
+              { backgroundColor: theme.backgroundElement },
             ]}
-          />
-        </View>
+            onLayout={(e) => {
+              progressTrackWidth.current = e.nativeEvent.layout.width;
+            }}
+          >
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  backgroundColor: theme.primary,
+                  width: `${progressPercent}%`,
+                },
+              ]}
+            />
+            {/* Curseur visible sur la progression */}
+            <View
+              style={[
+                styles.progressThumb,
+                {
+                  backgroundColor: theme.primary,
+                  left: `${progressPercent}%`,
+                },
+              ]}
+            />
+          </View>
+        </TouchableOpacity>
+
         <View style={styles.timeRow}>
           <Text style={[styles.timeText, { color: theme.textSecondary }]}>
             {formatDuration(currentTime)}
@@ -139,11 +179,26 @@ const PlayerScreen = () => {
         </View>
       </View>
 
+      {/* BUG-003 — tous les contrôles sur une seule ligne : shuffle — prev — play — next — repeat */}
       <View style={styles.controls}>
         <TouchableOpacity
-          onPress={() => previous()}
-          accessibilityLabel="Morceau précédent"
+          onPress={() => toggleShuffle()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityLabel={
+            isShuffled ? "Désactiver aléatoire" : "Activer aléatoire"
+          }
+        >
+          <Ionicons
+            name="shuffle"
+            size={22}
+            color={isShuffled ? theme.primary : theme.textSecondary}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => previous()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityLabel="Morceau précédent"
         >
           <Ionicons name="play-skip-back" size={28} color={theme.text} />
         </TouchableOpacity>
@@ -162,37 +217,23 @@ const PlayerScreen = () => {
 
         <TouchableOpacity
           onPress={() => next()}
-          accessibilityLabel="Morceau suivant"
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityLabel="Morceau suivant"
         >
           <Ionicons name="play-skip-forward" size={28} color={theme.text} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.extras}>
-        <TouchableOpacity
-          onPress={() => toggleShuffle()}
-          accessibilityLabel={isShuffled ? "Desactiver aleatoire" : "Activer aleatoire"}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Ionicons
-            name="shuffle"
-            size={22}
-            color={isShuffled ? theme.primary : theme.textSecondary}
-          />
         </TouchableOpacity>
 
         <View style={styles.loopContainer}>
           <TouchableOpacity
             onPress={() => setLoop(LOOP_CYCLE[loop])}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             accessibilityLabel={
               loop === "none"
-                ? "Repetition desactivee"
+                ? "Répétition désactivée"
                 : loop === "single"
-                  ? "Repetition du morceau"
-                  : "Repetition de la liste"
+                  ? "Répétition du morceau"
+                  : "Répétition de la liste"
             }
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
             <Ionicons
               name="repeat"
@@ -242,17 +283,26 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
   },
   progressSection: {
-    marginBottom: Spacing.four,
+    marginBottom: Spacing.five,
   },
   progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    overflow: "hidden",
+    height: 6,
+    borderRadius: 3,
+    overflow: "visible",
     marginBottom: Spacing.two,
+    position: "relative",
   },
   progressFill: {
     height: "100%",
-    borderRadius: 2,
+    borderRadius: 3,
+  },
+  progressThumb: {
+    position: "absolute",
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    top: -4,
+    marginLeft: -7,
   },
   timeRow: {
     flexDirection: "row",
@@ -261,11 +311,12 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: FontSize.xs,
   },
+  // BUG-003 — une seule ligne pour les 5 contrôles
   controls: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    columnGap: Spacing.five,
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.two,
     marginBottom: Spacing.four,
   },
   playButton: {
@@ -275,10 +326,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  extras: {
+  loopContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.three,
+    alignItems: "center",
+    columnGap: 2,
+  },
+  loopBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
   },
   emptyContainer: {
     flex: 1,
@@ -297,15 +352,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: "center",
     opacity: 0.7,
-  },
-  loopContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    columnGap: 2,
-  },
-  loopBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
   },
 });
 

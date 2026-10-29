@@ -105,6 +105,8 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
           if (t.url) playlist.add({ uri: t.url, name: t.title });
         });
         playlist.skipTo(0);
+        // Restaurer la position exacte dans le morceau pour ne pas repartir du début
+        playlist.seekTo(currentStatus.currentTime);
         if (currentStatus.playing) playlist.play();
       } else {
         // Désactiver le shuffle : revenir à l'ordre original
