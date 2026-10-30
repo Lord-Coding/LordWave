@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
 import {
-  createPlaylist,
-  deletePlaylist,
-  getAllPlaylists,
-  type PlaylistRow,
-  renamePlaylist,
-} from '@/database/repositories/playlistRepository';
+    createPlaylist,
+    deletePlaylist,
+    getAllPlaylists,
+    getAllPlaylistsSync,
+    type PlaylistRow,
+    renamePlaylist,
+} from "@/database/repositories/playlistRepository";
+import { useCallback, useEffect, useState } from "react";
 
 export function usePlaylists(): {
   playlists: PlaylistRow[];
@@ -15,8 +16,15 @@ export function usePlaylists(): {
   rename: (id: number, name: string) => Promise<void>;
   refresh: () => Promise<void>;
 } {
-  const [playlists, setPlaylists] = useState<PlaylistRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Chargement synchrone initial — pas de flash de loading au premier rendu
+  const [playlists, setPlaylists] = useState<PlaylistRow[]>(() => {
+    try {
+      return getAllPlaylistsSync();
+    } catch {
+      return [];
+    }
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
   const refresh = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -24,7 +32,7 @@ export function usePlaylists(): {
       const rows = await getAllPlaylists();
       setPlaylists(rows);
     } catch (err) {
-      console.error('[usePlaylists] refresh failed:', err);
+      console.error("[usePlaylists] refresh failed:", err);
     } finally {
       setIsLoading(false);
     }

@@ -1,3 +1,7 @@
+import {
+    loadMetadataCache,
+    saveMetadataToCache,
+} from "@/database/repositories/trackMetadataCacheRepository";
 import { Track } from "@/types/track";
 import { getAudioMetadata } from "@missingcore/audio-metadata";
 import { useEffect, useRef, useState } from "react";
@@ -6,7 +10,14 @@ const BATCH_SIZE = 10;
 
 /**
  * Enrichit progressivement une liste de tracks avec les métadonnées ID3.
- * Traite par batches de 10 pour éviter de saturer la mémoire.
+ *
+ * Stratégie cache :
+ * 1. Au premier appel, charge le cache SQLite synchrone en O(1).
+ * 2. Les tracks déjà en cache sont résolues immédiatement sans lecture fichier.
+ * 3. Seules les tracks absentes du cache sont lues depuis le fichier audio.
+ * 4. Les nouvelles métadonnées sont persistées en cache après lecture.
+ *
+ * Résultat : après le premier démarrage, les relancers sont quasi-instantanés.
  */
 export function useTrackMetadata(tracks: Track[]): {
   enrichedTracks: Track[];
@@ -15,24 +26,11 @@ export function useTrackMetadata(tracks: Track[]): {
   const [enrichedTracks, setEnrichedTracks] = useState<Track[]>(tracks);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Utiliser une ref pour éviter les re-runs infinis si le parent re-render.
-  // Initialisée avec null pour que le premier appel passe toujours le guard.
   const tracksRef = useRef<Track[] | null>(null);
-  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    // Guard : si c'est exactement le même tableau (même référence), ne pas relancer.
-    // Cela évite les re-runs infinis quand le parent re-render sans changer les tracks.
     if (tracks === tracksRef.current) return;
 
-    // Initialiser immédiatement avec les tracks bruts
     setEnrichedTracks(tracks);
     tracksRef.current = tracks;
 
@@ -42,23 +40,56 @@ export function useTrackMetadata(tracks: Track[]): {
     }
 
     let cancelled = false;
-    setIsLoading(true);
 
     const enrich = async (): Promise<void> => {
-      const result = [...tracks];
+      // Étape 1 — charger le cache synchrone en une seule requête
+      const cache = loadMetadataCache();
 
+      // Étape 2 — appliquer immédiatement les métadonnées en cache
+      const result = tracks.map((track) => {
+        if (!track.url) return track;
+        const cached = cache.get(track.url);
+        if (!cached) return track;
+        return {
+          ...track,
+          title: cached.title ?? track.title,
+          artist: cached.artist ?? track.artist,
+          album: cached.album ?? track.album,
+          artwork: cached.artwork ?? track.artwork,
+        };
+      });
+
+      setEnrichedTracks([...result]);
+
+      // Étape 3 — identifier les tracks absentes du cache
+      const uncachedIndexes = tracks
+        .map((t, i) => ({ t, i }))
+        .filter(({ t }) => t.url && !cache.has(t.url))
+        .map(({ i }) => i);
+
+      if (uncachedIndexes.length === 0) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+
+      // Étape 4 — lire et cacher par batches uniquement les tracks manquantes
       for (
         let batchStart = 0;
-        batchStart < result.length;
+        batchStart < uncachedIndexes.length;
         batchStart += BATCH_SIZE
       ) {
         if (cancelled) break;
 
-        const batchEnd = Math.min(batchStart + BATCH_SIZE, result.length);
+        const batchIndexes = uncachedIndexes.slice(
+          batchStart,
+          batchStart + BATCH_SIZE,
+        );
 
-        for (let i = batchStart; i < batchEnd; i++) {
+        for (const idx of batchIndexes) {
           if (cancelled) break;
-          const track = result[i];
+          const track = result[idx];
           if (!track.url) continue;
 
           try {
@@ -70,25 +101,36 @@ export function useTrackMetadata(tracks: Track[]): {
             ] as const);
 
             const meta = response.metadata;
-            result[i] = {
+
+            // Préfixer le base64 brut pour que FastImage puisse l'afficher.
+            // @missingcore/audio-metadata retourne une string base64 sans préfixe.
+            const artworkUri = meta.artwork
+              ? `data:image/jpeg;base64,${meta.artwork}`
+              : track.artwork;
+
+            const enriched: Track = {
               ...track,
               title: meta.name ?? track.title,
               artist: meta.artist ?? track.artist,
               album: meta.album ?? track.album,
-              artwork: meta.artwork ?? track.artwork,
+              artwork: artworkUri,
             };
+
+            result[idx] = enriched;
+
+            // Persister en cache (sans await bloquant pour ne pas ralentir l'UI)
+            saveMetadataToCache(track.url, enriched).catch(() => {
+              // Erreur de cache non critique — la track est enrichie en mémoire
+            });
           } catch {
-            // Conserver la track originale sans métadonnées enrichies
             console.warn(
-              `[useTrackMetadata] Impossible de lire les métadonnées pour : ${track.url}`,
+              `[useTrackMetadata] Impossible de lire les métadonnées : ${track.url}`,
             );
           }
         }
 
-        // Mise à jour progressive après chaque batch
         if (!cancelled) {
-          const snapshot = [...result];
-          setEnrichedTracks(snapshot);
+          setEnrichedTracks([...result]);
         }
       }
 

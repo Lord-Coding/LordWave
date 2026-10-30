@@ -1,5 +1,6 @@
 import * as SQLite from "expo-sqlite";
 import { migration001 } from "./migrations/001_initial";
+import { migration002 } from "./migrations/002_track_metadata_cache";
 
 /** Singleton — ouvert une seule fois au démarrage */
 export const db = SQLite.openDatabaseSync("lordwave.db");
@@ -21,10 +22,14 @@ async function runMigrations(): Promise<void> {
 
   if (currentVersion < 1) {
     await migration001(db);
-    // Écrire la version APRÈS le succès de la migration, jamais dedans.
-    // Si migration001 plante, schema_version reste vide → la migration sera
-    // rejouée au prochain démarrage sur un état propre.
     await db.runAsync("INSERT INTO schema_version (version) VALUES (?)", [1]);
+    currentVersion = 1;
+  }
+
+  if (currentVersion < 2) {
+    await migration002(db);
+    await db.runAsync("UPDATE schema_version SET version = ?", [2]);
+    currentVersion = 2;
   }
 }
 

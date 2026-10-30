@@ -25,6 +25,14 @@ export async function getAllPlaylists(): Promise<PlaylistRow[]> {
   );
 }
 
+/** Version synchrone pour le chargement initial sans flash de loading */
+export function getAllPlaylistsSync(): PlaylistRow[] {
+  return db.getAllSync<PlaylistRow>(
+    "SELECT id, name, createdAt FROM playlists ORDER BY createdAt DESC",
+    [],
+  );
+}
+
 export async function createPlaylist(name: string): Promise<number> {
   const result = await db.runAsync(
     "INSERT INTO playlists (name, createdAt) VALUES (?, ?)",
