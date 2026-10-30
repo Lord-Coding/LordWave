@@ -14,7 +14,6 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import FastImage from "react-native-fast-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const LOOP_CYCLE: Record<AudioPlaylistLoopMode, AudioPlaylistLoopMode> = {
@@ -90,7 +89,7 @@ const PlayerScreen = () => {
 
   const artworkSource =
     currentTrack.artwork && currentTrack.artwork.length > 0
-      ? { uri: currentTrack.artwork, priority: FastImage.priority.normal }
+      ? { uri: currentTrack.artwork }
       : unknownTrackImage;
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -112,7 +111,12 @@ const PlayerScreen = () => {
 
       {/* Pochette */}
       <View style={styles.artworkContainer}>
-        <FastImage source={artworkSource} style={styles.artwork} />
+        <Image
+          source={artworkSource}
+          style={styles.artwork}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
       </View>
 
       {/* Titre + Artiste */}

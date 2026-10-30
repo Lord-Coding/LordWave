@@ -102,8 +102,8 @@ export function useTrackMetadata(tracks: Track[]): {
 
             const meta = response.metadata;
 
-            // Préfixer le base64 brut pour que FastImage puisse l'afficher.
-            // @missingcore/audio-metadata retourne une string base64 sans préfixe.
+            // Préfixer le base64 brut pour que expo-image puisse l'afficher.
+            // @missingcore/audio-metadata retourne une string base64 sans préfixe data URI.
             const artworkUri = meta.artwork
               ? `data:image/jpeg;base64,${meta.artwork}`
               : track.artwork;

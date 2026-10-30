@@ -60,7 +60,8 @@
       "expo-image",
       "expo-font",
       "expo-status-bar",
-      "react-native-fast-image"
+      "expo-web-browser",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,

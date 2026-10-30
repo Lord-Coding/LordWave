@@ -14,7 +14,7 @@
 - [x] Installer les dépendances avec `npx expo install`.
 - [x] Vérifier l'organisation des routes et des écrans Expo Router.
 - [x] Vérifier la configuration native après toute modification d'un plugin ou d'une dépendance native.
-- [ ] Utiliser Git pour conserver l'historique des modifications.
+- [x] Utiliser Git pour conserver l'historique des modifications.
 - [ ] Lancer régulièrement `npx expo-doctor` et corriger les erreurs importantes.
 
 ### Architecture & Thème
@@ -67,18 +67,19 @@
 - [x] Afficher une liste de morceaux avec titre et durée.
 - [x] Gérer les états : chargement, permission refusée, erreur, bibliothèque vide.
 - [x] Afficher artiste et album (nécessite lecture des métadonnées ID3).
-- [ ] Gérer les métadonnées manquantes (`Artiste inconnu`, etc.).
+- [x] Gérer les métadonnées manquantes (`Artiste inconnu`, titre = nom de fichier sans extension).
 - [ ] Gérer les fichiers déplacés, supprimés ou inaccessibles.
 - [ ] Ajouter une action pour rescanner la bibliothèque.
 - [ ] Tester avec MP3, M4A, WAV, FLAC.
 
 ### Pochettes
 
-- [ ] Récupérer la pochette intégrée au fichier audio.
+- [x] Récupérer la pochette intégrée au fichier audio (via `@missingcore/audio-metadata`, base64 ID3).
 - [x] Prévoir une illustration de remplacement (`unknown_artist.png`, `unknown_track.png`).
 - [x] Afficher la pochette sur l'écran lecteur.
 - [ ] Afficher la pochette dans la notification et l'écran verrouillé.
-- [ ] Mettre en cache les pochettes.
+- [x] Mettre en cache les pochettes (stockées dans `track_metadata_cache` SQLite via PERF-001).
+- [x] Cacher la tab-bar sur le lecteur — non nécessaire : modal root Stack hors du groupe tabs.
 
 ### Lecteur audio complet
 
@@ -115,15 +116,17 @@
 ### Interface & UX
 
 - [ ] Créer une identité visuelle cohérente pour LordWave.
-- [ ] Concevoir les écrans : accueil, bibliothèque, lecteur, recherche, playlists, favoris, paramètres.
+- [x] Concevoir les écrans playlists et favoris (fonctionnels avec SQLite).
+- [x] Concevoir l'écran lecteur (branché sur `expo-audio`, queue, shuffle, repeat).
+- [ ] Concevoir les écrans : accueil, bibliothèque, recherche, paramètres (V2).
 - [x] Prévoir les états : chargement, liste vide, permission refusée, erreur de lecture.
-- [ ] Assurer la lisibilité sur petits et grands écrans.
+- [x] Assurer la lisibilité sur petits et grands écrans (maxWidth sur ScreenWrapper).
 - [x] Ajouter des animations sobres sans ralentir la lecture. _(transitions slide_from_right, FadeInDown sur listes)_
 - [x] Ajouter les libellés d'accessibilité aux boutons importants (lecteur, tab-bar).
 - [ ] Tester la navigation avec le bouton Retour Android.
-- [ ] Ajouter un `headerRight` avec icône settings ou recherche dans les headers.
+- [x] Ajouter un `headerRight` avec icône settings dans les headers.
 - [ ] Personnaliser la police du titre du header avec `headerTitleStyle.fontFamily`.
-- [ ] Créer des états vides stylés (illustration + texte) pour la bibliothèque vide.
+- [x] Créer des états vides stylés (illustration + texte) — composant `EmptyState` réutilisable.
 - [x] Créer un hook `useThemedStyles(stylesheet)` — utilisé dans les nouveaux composants.
 
 ### Tests & Robustesse
@@ -142,7 +145,8 @@
 
 - [x] Configurer `eas.json` avec un profil `preview` qui produit un APK.
 - [x] Corriger le fichier `assets/covers/unknown_artist.png` (JPEG déguisé en PNG — corrigé avant le build EAS).
-- [ ] Générer l'APK avec `eas build --platform android --profile preview` et l'installer sur appareil réel.
+- [ ] Générer un nouvel APK incluant les permissions `READ_MEDIA_AUDIO` et le plugin `expo-media-library` (`eas build --platform android --profile preview`).
+- [ ] Installer et tester l'APK sur appareil réel.
 - [ ] Vérifier le fonctionnement hors ligne, en arrière-plan et sur l'écran verrouillé.
 - [ ] Garder le profil `production` en AAB pour la publication Play Store.
 
@@ -155,11 +159,11 @@
 3. [x] Écran lecteur modal (design statique).
 4. [x] Brancher `expo-audio` sur le lecteur (lecture réelle, contrôles, background).
 5. [ ] Lecture en arrière-plan + notification + écran verrouillé sur appareil réel.
-6. [ ] Métadonnées complètes (artiste, album, pochette via ID3).
-7. [ ] File de lecture, précédent/suivant, répétition et aléatoire.
-8. [ ] Favoris, playlists, historique et SQLite.
-9. [ ] Recherche, tri et navigation complète.
-10. [ ] Finition visuelle et accessibilité.
+6. [x] Métadonnées complètes (artiste, album, pochette via ID3 — `@missingcore/audio-metadata`).
+7. [x] File de lecture avec queue globale, précédent/suivant, répétition et aléatoire.
+8. [x] Favoris, playlists et SQLite.
+9. [x] Recherche par titre, artiste et album.
+10. [x] Finition visuelle : animations, états vides, headerRight, responsive.
 11. [ ] Tests sur appareil réel et corrections.
 12. [ ] APK autonome de test, puis préparation de la version de publication.
 

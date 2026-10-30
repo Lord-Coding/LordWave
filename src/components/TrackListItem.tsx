@@ -13,7 +13,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import FastImage from "react-native-fast-image";
 
 export type TrackListItemProps = {
   track: Track & { image?: string };
@@ -50,20 +49,20 @@ export const TrackListItem = ({
 
   // Source artwork : base64 ou URI si disponible, sinon fallback require()
   const artworkUri = track.artwork ?? track.image;
-  const artworkSource = artworkUri
-    ? { uri: artworkUri, priority: FastImage.priority.normal }
-    : unknownArtistImage;
+  const artworkSource = artworkUri ? { uri: artworkUri } : unknownArtistImage;
 
   return (
     <TouchableHighlight onPress={handlePress} underlayColor="transparent">
       <View style={styles.trackItemContainer}>
         {/* Pochette */}
-        <FastImage
+        <Image
           source={artworkSource}
           style={{
             ...styles.trackArtworkImage,
             opacity: isActiveTrack ? 0.6 : 1,
           }}
+          contentFit="cover"
+          cachePolicy="memory-disk"
         />
 
         {/* Titre + Artiste */}
