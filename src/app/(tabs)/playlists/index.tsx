@@ -1,5 +1,4 @@
 import { EmptyState } from "@/components/EmptyState";
-import { ScreenWrapper } from "@/components/screen-wrapper";
 import { FontSize, Spacing } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
 import { useNavigationSearch } from "@/hooks/useNavigationSearch";
@@ -8,7 +7,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
     Alert,
     FlatList,
     KeyboardAvoidingView,
@@ -60,16 +58,16 @@ const PlaylistsScreen = () => {
 
   if (isLoading) {
     return (
-      <ScreenWrapper>
+      <ScreenContainer>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={theme.primary} />
+          <EmptyState icon="musical-notes-outline" title="Chargement…" />
         </View>
-      </ScreenWrapper>
+      </ScreenContainer>
     );
   }
 
   return (
-    <ScreenWrapper>
+    <ScreenContainer>
       {/* Bouton créer */}
       <TouchableOpacity
         style={[styles.createButton, { backgroundColor: theme.primary }]}
@@ -203,7 +201,7 @@ const PlaylistsScreen = () => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </ScreenWrapper>
+    </ScreenContainer>
   );
 };
 

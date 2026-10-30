@@ -93,7 +93,10 @@ export function useTrackMetadata(tracks: Track[]): {
           if (!track.url) continue;
 
           try {
-            const response = await getAudioMetadata(track.url, [
+            // Décoder l'URI pour gérer les chemins avec caractères Unicode
+            // (ex: fichiers japonais/chinois encodés en %XX dans le chemin)
+            const decodedUrl = decodeURIComponent(track.url);
+            const response = await getAudioMetadata(decodedUrl, [
               "name",
               "artist",
               "album",

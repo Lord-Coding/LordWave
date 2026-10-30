@@ -23,9 +23,8 @@ const ItemDivider = () => {
   return (
     <View
       style={{
-        ...utilsStyle(theme).itemSeparator,
         marginVertical: 9,
-        marginLeft: 60,
+        marginLeft: 10,
       }}
     />
   );
@@ -47,7 +46,6 @@ export const TracksList = ({
         paddingBottom: 130,
       }}
       ListFooterComponent={ItemDivider}
-      ItemSeparatorComponent={ItemDivider}
       renderItem={({ item: track, index }) => {
         const isFav = favoriteUrls
           ? favoriteUrls.includes(track.url ?? "")

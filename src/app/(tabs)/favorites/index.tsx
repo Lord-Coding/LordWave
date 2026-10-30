@@ -66,7 +66,7 @@ const FavoritesScreen = () => {
   }
 
   return (
-    <ScreenWrapper>
+    <ScreenContainer>
       <TracksList
         tracks={filteredTracks}
         showFavoriteButton
@@ -75,7 +75,7 @@ const FavoritesScreen = () => {
           if (track.url) remove(track.url);
         }}
       />
-    </ScreenWrapper>
+    </ScreenContainer>
   );
 };
 

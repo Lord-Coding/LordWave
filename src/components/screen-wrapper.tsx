@@ -57,3 +57,23 @@ export function ScreenWrapper({
     </ScrollView>
   );
 }
+
+/**
+ * Conteneur simple pour les écrans qui gèrent leur propre scroll (FlatList, SectionList).
+ * N'utilise pas ScrollView pour éviter le conflit "VirtualizedList dans ScrollView".
+ */
+export function ScreenContainer({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const theme = useAppTheme();
+
+  return (
+    <View style={[{ flex: 1, backgroundColor: theme.background }, style]}>
+      {children}
+    </View>
+  );
+}

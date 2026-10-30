@@ -1,5 +1,5 @@
 import { EmptyState } from "@/components/EmptyState";
-import { ScreenWrapper } from "@/components/screen-wrapper";
+import { ScreenContainer, ScreenWrapper } from "@/components/screen-wrapper";
 import { TracksList } from "@/components/TracksList";
 import { Spacing } from "@/constants/theme";
 import { useAppTheme } from "@/context/theme-context";
@@ -12,7 +12,6 @@ import { useMemo } from "react";
 import {
   ActivityIndicator,
   Linking,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -90,13 +89,8 @@ const SongScreen = () => {
   }
 
   return (
-    <ScreenWrapper>
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={{ paddingHorizontal: Spacing.four }}
-      >
-        <TracksList tracks={filteredTracks} scrollEnabled={false} />
-      </ScrollView>
+    <ScreenContainer>
+      <TracksList tracks={filteredTracks} />
       {isMetadataLoading && (
         <View style={styles.metadataLoadingBar}>
           <ActivityIndicator size="small" color={theme.primary} />
@@ -105,7 +99,7 @@ const SongScreen = () => {
           </Text>
         </View>
       )}
-    </ScreenWrapper>
+    </ScreenContainer>
   );
 };
 
