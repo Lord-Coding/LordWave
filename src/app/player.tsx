@@ -34,6 +34,7 @@ const PlayerScreen = () => {
     playing,
     loop,
     isShuffled,
+    volume,
     play,
     pause,
     next,
@@ -41,18 +42,28 @@ const PlayerScreen = () => {
     seekTo,
     setLoop,
     toggleShuffle,
+    setVolume,
   } = usePlayer();
 
   const currentTrack = tracks[currentIndex] ?? null;
 
   // BUG-002 — barre de progression interactive
   const progressTrackWidth = useRef(0);
+  // Barre de volume interactive
+  const volumeTrackWidth = useRef(0);
 
   const handleProgressPress = (e: GestureResponderEvent) => {
     if (progressTrackWidth.current <= 0 || duration <= 0) return;
     const x = e.nativeEvent.locationX;
     const ratio = Math.max(0, Math.min(1, x / progressTrackWidth.current));
     seekTo(ratio * duration);
+  };
+
+  const handleVolumePress = (e: GestureResponderEvent) => {
+    if (volumeTrackWidth.current <= 0) return;
+    const x = e.nativeEvent.locationX;
+    const ratio = Math.max(0, Math.min(1, x / volumeTrackWidth.current));
+    setVolume(ratio);
   };
 
   if (!currentTrack) {
@@ -252,6 +263,48 @@ const PlayerScreen = () => {
           )}
         </View>
       </View>
+
+      {/* Barre de volume */}
+      <View style={styles.volumeSection}>
+        <Ionicons name="volume-low" size={16} color={theme.textSecondary} />
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={handleVolumePress}
+          accessibilityLabel="Volume"
+          accessibilityRole="adjustable"
+          style={styles.volumeTrackWrapper}
+        >
+          <View
+            style={[
+              styles.volumeTrack,
+              { backgroundColor: theme.backgroundElement },
+            ]}
+            onLayout={(e) => {
+              volumeTrackWidth.current = e.nativeEvent.layout.width;
+            }}
+          >
+            <View
+              style={[
+                styles.volumeFill,
+                {
+                  backgroundColor: theme.primary,
+                  width: `${(volume ?? 1) * 100}%`,
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.volumeThumb,
+                {
+                  backgroundColor: theme.primary,
+                  left: `${(volume ?? 1) * 100}%`,
+                },
+              ]}
+            />
+          </View>
+        </TouchableOpacity>
+        <Ionicons name="volume-high" size={16} color={theme.textSecondary} />
+      </View>
     </SafeAreaView>
   );
 };
@@ -338,6 +391,33 @@ const styles = StyleSheet.create({
   loopBadgeText: {
     fontSize: 10,
     fontWeight: "700",
+  },
+  volumeSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    columnGap: Spacing.two,
+    paddingHorizontal: Spacing.two,
+  },
+  volumeTrackWrapper: {
+    flex: 1,
+  },
+  volumeTrack: {
+    height: 4,
+    borderRadius: 2,
+    overflow: "visible",
+    position: "relative",
+  },
+  volumeFill: {
+    height: "100%",
+    borderRadius: 2,
+  },
+  volumeThumb: {
+    position: "absolute",
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    top: -4,
+    marginLeft: -6,
   },
   emptyContainer: {
     flex: 1,

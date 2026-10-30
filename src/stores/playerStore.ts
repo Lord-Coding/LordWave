@@ -1,6 +1,6 @@
-import { type AudioPlaylistLoopMode } from 'expo-audio';
-import { createContext, useContext } from 'react';
-import { Track } from '@/types/track';
+import { Track } from "@/types/track";
+import { type AudioPlaylistLoopMode } from "expo-audio";
+import { createContext, useContext } from "react";
 
 export type PlayerContextValue = {
   /** Queue complète de lecture */
@@ -15,6 +15,8 @@ export type PlayerContextValue = {
   isBuffering: boolean;
   /** Indique si le mode aléatoire est actif */
   isShuffled: boolean;
+  /** Volume (0.0 à 1.0) */
+  volume: number;
 
   // Actions
   loadQueue: (tracks: Track[], startIndex?: number) => void;
@@ -26,12 +28,14 @@ export type PlayerContextValue = {
   setLoop: (mode: AudioPlaylistLoopMode) => void;
   skipTo: (index: number) => void;
   toggleShuffle: () => void;
+  setVolume: (volume: number) => void;
 };
 
 export const PlayerContext = createContext<PlayerContextValue | null>(null);
 
 export function usePlayer(): PlayerContextValue {
   const ctx = useContext(PlayerContext);
-  if (!ctx) throw new Error('usePlayer doit être utilisé dans un PlayerProvider');
+  if (!ctx)
+    throw new Error("usePlayer doit être utilisé dans un PlayerProvider");
   return ctx;
 }

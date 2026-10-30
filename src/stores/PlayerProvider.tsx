@@ -79,6 +79,21 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
   // Toujours synchroniser la ref avant que les callbacks ne l'utilisent
   statusRef.current = status;
 
+  // Lock screen controls — met à jour les métadonnées dès que le morceau change
+  const currentTrack = tracks[status.currentIndex] ?? null;
+  useEffect(() => {
+    if (!currentTrack) return;
+    try {
+      playlist.setLockScreenControls({
+        title: currentTrack.title,
+        artist: currentTrack.artist ?? undefined,
+        artwork: currentTrack.artwork ?? undefined,
+      });
+    } catch {
+      // setLockScreenControls peut échouer si la playlist n'est pas encore active
+    }
+  }, [currentTrack, playlist]);
+
   const toggleShuffle = useCallback((): void => {
     setIsShuffled((prev) => {
       const next = !prev;
@@ -135,6 +150,13 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
     [playlist],
   );
 
+  const setVolume = useCallback(
+    (vol: number): void => {
+      playlist.volume = Math.max(0, Math.min(1, vol));
+    },
+    [playlist],
+  );
+
   const value: PlayerContextValue = {
     tracks,
     currentIndex: status.currentIndex,
@@ -145,6 +167,7 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
     isLoaded: status.isLoaded,
     isBuffering: status.isBuffering,
     isShuffled,
+    volume: status.volume,
     loadQueue,
     play: () => playlist.play(),
     pause: () => playlist.pause(),
@@ -154,6 +177,7 @@ export function PlayerProvider({ children }: PlayerProviderProps) {
     setLoop,
     skipTo: (i) => playlist.skipTo(i),
     toggleShuffle,
+    setVolume,
   };
 
   return (

@@ -5,6 +5,7 @@ import { usePlayer } from "@/stores/PlayerProvider";
 import { Track } from "@/types/track";
 import { formatDuration } from "@/utils/formatDuration";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import {
   StyleSheet,

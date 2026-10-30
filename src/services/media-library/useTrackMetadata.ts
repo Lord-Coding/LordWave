@@ -8,6 +8,14 @@ import { useEffect, useRef, useState } from "react";
 
 const BATCH_SIZE = 10;
 
+/** Formats supportés par @missingcore/audio-metadata */
+const SUPPORTED_EXTENSIONS = new Set([".mp3", ".flac", ".mp4", ".m4a"]);
+
+function isSupportedFormat(url: string): boolean {
+  const lower = url.toLowerCase();
+  return [...SUPPORTED_EXTENSIONS].some((ext) => lower.endsWith(ext));
+}
+
 /**
  * Enrichit progressivement une liste de tracks avec les métadonnées ID3.
  *
@@ -61,10 +69,12 @@ export function useTrackMetadata(tracks: Track[]): {
 
       setEnrichedTracks([...result]);
 
-      // Étape 3 — identifier les tracks absentes du cache
+      // Étape 3 — identifier les tracks absentes du cache ET de format supporté
       const uncachedIndexes = tracks
         .map((t, i) => ({ t, i }))
-        .filter(({ t }) => t.url && !cache.has(t.url))
+        .filter(
+          ({ t }) => t.url && !cache.has(t.url) && isSupportedFormat(t.url),
+        )
         .map(({ i }) => i);
 
       if (uncachedIndexes.length === 0) {
