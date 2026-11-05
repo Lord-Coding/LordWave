@@ -39,7 +39,7 @@ export default function AlbumGrid() {
               />
 
               <View style={styles.play}>
-                <Play size={14} color="#111" fill="#111" />
+                <Play size={14} color={theme.primary} fill={theme.primary} />
               </View>
             </View>
 

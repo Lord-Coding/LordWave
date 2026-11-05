@@ -54,13 +54,13 @@ export default function CategorySelector({ selected, onSelect}: Props) {
                         <Text 
                             style={[
                                 { fontSize: FontSize.xs, color: theme.textSecondary, fontWeight: "600" },
-                                active && { color: "#FFFFFF" },
+                                active && {color: theme.white},
                             ]}
                         >
                             {label}
                         </Text>
 
-                        {active ? <Text style={styles.dot}>•</Text> : null}
+                        {active ? <Text style={[styles.dot, {color: theme.white}]}>•</Text> : null}
                     </Pressable>
                 );
             })}
@@ -73,8 +73,6 @@ const styles = StyleSheet.create({
         flexGrow: 0,
     },
     content: {
-        paddingHorizontal: 20,
-        paddingVertical: 3,
         gap: 9,
     },
     tab: {
@@ -86,7 +84,6 @@ const styles = StyleSheet.create({
         gap: 7,
     },
     dot: {
-        color: "#ffffff",
         fontSize: 7,
     },
     pressed: { 

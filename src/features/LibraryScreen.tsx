@@ -7,7 +7,6 @@ import ScreenContainer from "@/components/ScreenContainer";
 import TrackItem from "@/components/TrackItem";
 import { mockTracks } from "@/constants/mockMusic";
 import { MusicCategory, Track } from "@/constants/musicType";
-import { FontSize } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { Ionicons } from "@expo/vector-icons";
 import { toast } from "burnt";
@@ -102,7 +101,12 @@ export default function LibraryScreen() {
   return (
     <ScreenContainer>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Bibliothèque</Text>
+        <View>
+          <Text style={[styles.title, {color: theme.text}]}>Ma Bibliothèque</Text>
+          <Text style={[styles.subtitle, {color: theme.textSecondary}]}>
+            Retrouvez tous vos morceaux, albums et artistes.
+          </Text>
+        </View>
         <Pressable onPress={() => console.log("Recherche")}>
           <Ionicons name="search" size={24} style={{ color: theme.text }} />
         </Pressable>
@@ -125,18 +129,19 @@ export default function LibraryScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    display: "flex",
     flexDirection: "row",
     gap: 16,
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 24,
+    paddingTop: 36,
   },
   title: {
-    fontSize: FontSize.lg,
-    fontWeight: "600",
-    letterSpacing: 1,
+    fontSize: 25,
+    fontWeight: "800",
+    letterSpacing: -0.6,
   },
+  subtitle: { fontSize: 12, marginTop: 6 },
   list: {
     flex: 1,
   },

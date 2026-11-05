@@ -66,7 +66,7 @@ export default function EmptyScreen({ icon, title, subtitle, action }: EmptyStat
                     accessibilityRole="button"
                     accessibilityLabel={action.label}
                 >
-                    <Text style={{ color: "#ffffff", fontWeight: "bold" }}>
+                    <Text style={{ color: theme.white, fontWeight: "bold" }}>
                         {action.label}
                     </Text>
                 </TouchableOpacity>

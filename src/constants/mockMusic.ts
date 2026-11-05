@@ -1,4 +1,4 @@
-import type { Album, Artist, MusicFolder, Track } from "./musicType"
+import type { Album, Artist, MusicFolder, Playlist, Track } from "./musicType"
 
 const img = (id: string, width = 640) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=85`;
 
@@ -153,5 +153,62 @@ export const mockFolders: MusicFolder[] = [
     name: "Bluetooth",
     path: "/storage/emulated/0/Bluetooth",
     trackCount: 7,
+  },
+];
+
+export const mockPlaylists: Playlist[] = [
+  {
+    id: "p1",
+    title: "Mes incontournables",
+    description: "Les morceaux que j'écoute le plus",
+    cover: mockTracks[0].cover,
+    trackCount: 24,
+    duration: "1 h 32",
+    updatedAt: "Aujourd'hui",
+  },
+  {
+    id: "p2",
+    title: "Chill & Relax",
+    description: "Pour les moments de détente",
+    cover: mockAlbums[1].cover,
+    trackCount: 18,
+    duration: "58 min",
+    updatedAt: "Hier",
+  },
+  {
+    id: "p3",
+    title: "Night Vibes",
+    description: "Ambiance nocturne",
+    cover: mockAlbums[2].cover,
+    trackCount: 15,
+    duration: "49 min",
+    updatedAt: "Il y a 2 jours",
+  },
+  {
+    id: "p4",
+    title: "Workout",
+    description: "Pour garder le rythme",
+    cover: mockAlbums[4].cover,
+    trackCount: 32,
+    duration: "1 h 48",
+    updatedAt: "Il y a 3 jours",
+  },
+  {
+    id: "p5",
+    title: "Mes découvertes",
+    description: "Les nouvelles musiques",
+    cover: mockAlbums[3].cover,
+    trackCount: 12,
+    duration: "41 min",
+    updatedAt: "Cette semaine",
+  },
+  {
+    id: "p6",
+    title: "Slow Music",
+    description: "Une sélection tout en douceur",
+    cover: mockTracks[5].cover,
+    trackCount: 20,
+    duration: "1 h 12",
+    updatedAt: "Cette semaine",
   },
 ];

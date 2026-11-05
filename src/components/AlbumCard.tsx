@@ -34,7 +34,7 @@ export default function AlbumCard({ album, onPress, onPlay }: Props) {
                     style={[ styles.play, { backgroundColor: "rgba(255,255,255,0.94)" } ]}
                     onPress={() => onPlay(album)}
                 >
-                    <Play size={16} color={theme.text} fill={theme.text} />
+                    <Play size={16} color={theme.primary} fill={theme.primary} />
                 </Pressable>
             </View>
 

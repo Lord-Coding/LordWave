@@ -33,3 +33,13 @@ export interface MusicFolder {
     path: string;
     trackCount: number;
 }
+
+export interface Playlist {
+    id: string;
+    title: string;
+    description: string;
+    cover: string;
+    trackCount: number;
+    duration: string;
+    updatedAt: string;
+}
