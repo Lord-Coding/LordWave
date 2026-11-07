@@ -2,12 +2,12 @@ import { usePlayer } from "@/hooks/usePlayer"
 import { View, Text, Pressable, StyleSheet } from "react-native"
 import { Image } from "expo-image"
 import { useTheme } from "@/hooks/use-theme";
-import { Pause, Play, SkipForward } from "lucide-react-native";
+import { Pause, Play, SkipForward, SkipBack } from "lucide-react-native";
 import { router } from "expo-router";
 
 export default function MiniPlayer() {
     const theme = useTheme();
-    const { currentTrack, isPlaying, togglePlayback, nextTrack } = usePlayer()
+    const { currentTrack, isPlaying, togglePlayback, nextTrack, previousTrack } = usePlayer()
 
     if (!currentTrack) return null;
 
@@ -31,13 +31,21 @@ export default function MiniPlayer() {
 
             <Pressable
                 style={styles.control}
+                onPress={previousTrack}
+                hitSlop={8}
+            >
+                <SkipBack size={23} color={theme.white} fill={theme.white} />
+            </Pressable>
+
+            <Pressable
+                style={styles.control}
                 onPress={togglePlayback}
                 hitSlop={8}
             >
                 {isPlaying ? (
-                    <Pause size={23} color={theme.white} />
+                    <Pause size={23} color={theme.white} fill={theme.white} />
                 ) : (
-                    <Play size={23} color={theme.white} />
+                    <Play size={23} color={theme.white} fill={theme.white} />
                 )}
             </Pressable>
 
@@ -46,7 +54,7 @@ export default function MiniPlayer() {
                 onPress={nextTrack}
                 hitSlop={8}
             >
-                <SkipForward size={23} color={theme.white} />
+                <SkipForward size={23} color={theme.white} fill={theme.white} />
             </Pressable>
         </View>
     )
@@ -57,11 +65,12 @@ const styles = StyleSheet.create({
         height: 66,
         marginHorizontal: 12,
         marginBottom: 5,
-        paddingHorizontal: 10,
+        paddingRight: 10,
+        paddingLeft: 8,
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: "#292596",
-        borderRadius: 12,
+        borderRadius: 50,
     },
     trackArea: {
         flex: 1,
@@ -70,9 +79,9 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     cover: {
-        width: 43,
-        height: 43,
-        borderRadius: 7,
+        width: 50,
+        height: 50,
+        borderRadius: 30,
     },
     info: {
         flex: 1,

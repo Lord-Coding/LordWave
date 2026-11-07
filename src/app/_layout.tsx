@@ -44,7 +44,9 @@ const RootNavigation = () => {
         <Stack.Screen 
           name="now-playing"
           options={{
-            headerShown: false
+            headerShown: false,
+            presentation: "modal",
+            animation: "slide_from_bottom",
           }}
         />
 

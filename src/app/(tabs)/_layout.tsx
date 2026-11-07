@@ -3,11 +3,12 @@ import { FontSize } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { BottomTabBar } from "expo-router/build/layouts/Tabs";
 import { Heart, ListVideo, type LucideIcon } from "lucide-react-native";
 import { Pressable, View, type ColorValue } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const TAB_HEIGHT = 70;
+const TAB_HEIGHT = 60;
 
 function makeTabBarIcon(Icon: LucideIcon) {
   return ({
@@ -60,8 +61,9 @@ export default function TabsLayout() {
         tabBarHideOnKeyboard: true,
       }}
       tabBar={(props) => (
-        <View style={{ backgroundColor: theme.backgroundElement }}>
+        <View style={{ backgroundColor: "transparent" }}>
           <MiniPlayer />
+          <BottomTabBar {...props} />
         </View>
       )}
     >

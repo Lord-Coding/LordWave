@@ -45,12 +45,10 @@ export default function LibraryScreen() {
 
             <View style={styles.quickRow}>
               <View style={styles.quickLabel}>
-                <Music2 size={17} color={theme.primary} />
+                <Music2 size={20} color={theme.primary} />
 
-                <Text
-                  style={[styles.quickText, { color: theme.textSecondary }]}
-                >
-                  Votre Bibliothèque
+                <Text style={[styles.heading, { color: theme.text }]}>
+                  Toutes les chansons
                 </Text>
               </View>
 
@@ -70,10 +68,6 @@ export default function LibraryScreen() {
                 </Pressable>
               </View>
             </View>
-
-            <Text style={[styles.heading, { color: theme.text }]}>
-              Toutes les chansons
-            </Text>
           </>
         )}
 
@@ -175,6 +169,5 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 18,
     fontWeight: "700",
-    marginBottom: 9,
   },
 });

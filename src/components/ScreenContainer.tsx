@@ -5,15 +5,28 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 interface ScreenContainerProps {
   children: ReactNode;
+  backgroundColor?: string;
+  includeBottomSafeArea?: boolean;
 }
 
-export default function ScreenContainer({ children }: ScreenContainerProps) {
+export default function ScreenContainer({
+  children,
+  backgroundColor,
+  includeBottomSafeArea = false,
+}: ScreenContainerProps) {
   const theme = useTheme();
 
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: theme.background }]}
-      edges={["top", "left", "right"]}
+      style={[
+        styles.safeArea,
+        { backgroundColor: backgroundColor ?? theme.background },
+      ]}
+      edges={
+        includeBottomSafeArea
+          ? ["top", "left", "right", "bottom"]
+          : ["top", "left", "right"]
+      }
     >
       <View style={styles.container}>{children}</View>
     </SafeAreaView>

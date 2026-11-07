@@ -25,6 +25,7 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
     const [tail, setTail] = useState<Track[]>(mockTracks.slice(1))
     const [isPlaying, setIsPlaying] = useState(false)
     const [currentTime, setCurrentTime] = useState(0)
+    const [history, setHistory] = useState<Track[]>([]);
 
     const playTrack = useCallback((track: Track, list: Track[] = mockTracks) => {
         setCurrentTrack(track);
@@ -44,6 +45,10 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
                 return currentTail;
             }
 
+            if (currentTrack) {
+                setHistory((prev) => [currentTrack, ...prev]);
+            }
+
             const [next, ...remaining] = currentTail;
         
             setCurrentTrack(next);
@@ -55,7 +60,23 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
     }, [tail])
 
     const previousTrack = useCallback(() => {
-        setCurrentTime(0);
+        setTail((currentHistory) => {
+            if (currentHistory.length === 0) {
+                return currentHistory;
+            }
+
+            const [previous, ...remaining] = currentHistory;
+
+            if (currentTrack) {
+                setTail((currentTail) => [currentTrack, ...currentTail]);
+            }
+
+            setCurrentTrack(previous);
+            setCurrentTime(0);
+            setIsPlaying(true);
+
+            return remaining;
+        });
     }, [])
 
     const seekTo = useCallback((time: number) => {

@@ -7,6 +7,7 @@ import { Image } from "expo-image"
 import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { ArrowLeft, Play, Shuffle } from "lucide-react-native";
 import TrackRow from "@/components/TrackRow";
+import ScreenContainer from "@/components/ScreenContainer";
 
 function isCollectionType(value: string | undefined): value is CollectionType {
     return value === "playlist" || value === "album" || value === "artist" || value === "folder";
@@ -106,20 +107,29 @@ export default function CollectionDetailScreen() {
 
     if (!title) {
         return (
-            <View style={[styles.empty, {backgroundColor: theme.backgroundElement}]}>
-                <Text style={[styles.emptyText, {color: theme.textSecondary}]}>Élément introuvable.</Text>
-                <Pressable onPress={() => router.back()}>
-                    <Text style={{ color: theme.tint}}>Retour</Text>
-                </Pressable>
-            </View>
+            <ScreenContainer
+                backgroundColor={theme.backgroundElement}
+                includeBottomSafeArea
+            >
+                <View style={styles.empty}>
+                    <Text style={[styles.emptyText, {color: theme.textSecondary}]}>Élément introuvable.</Text>
+                    <Pressable onPress={() => router.back()}>
+                        <Text style={{ color: theme.tint}}>Retour</Text>
+                    </Pressable>
+                </View>
+            </ScreenContainer>
         );
     }
 
     return (
-        <ScrollView 
-            style={[styles.container, {backgroundColor: theme.backgroundElement}]}
-            contentContainerStyle={styles.content}
+        <ScreenContainer
+            backgroundColor={theme.backgroundElement}
+            includeBottomSafeArea
         >
+          <ScrollView
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
             <Pressable
                 onPress={() => router.back()}
                 style={[styles.backButton, {backgroundColor: theme.backgroundElement}]}
@@ -183,16 +193,14 @@ export default function CollectionDetailScreen() {
                     />
                 ))
             )}
-        </ScrollView>
+          </ScrollView>
+        </ScreenContainer>
     )
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
     content: {
-        padding: 20,
+        paddingTop: 20,
         paddingBottom: 45,
     },
     empty: {
