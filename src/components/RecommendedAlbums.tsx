@@ -1,20 +1,21 @@
-import { mockAlbums } from "@/constants/mockMusic";
-import { useTheme } from "@/hooks/use-theme";
-import { toast } from "burnt";
+import { getAlbumTracks, mockAlbums } from "@/constants/mockMusic";
+import { usePlayer } from "@/hooks/usePlayer";
+import { openCollection } from "@/navigation/openCollection";
 import { ScrollView, StyleSheet, View } from "react-native";
 import AlbumCard from "./AlbumCard";
 import SectionHeader from "./SectionHeader";
 
 export default function RecommendedAlbums() {
-  const theme = useTheme();
+  const { playTrack } = usePlayer();
   const openAlbum = (album: (typeof mockAlbums)[number]) => {
-    // Remplacer par une vraie fonction d'ouverture d'album
-    toast({ title: "Album sélectionné", message: album.title });
+    openCollection("album", album.id);
   };
 
   const playAlbum = (album: (typeof mockAlbums)[number]) => {
-    // Remplacer par une vraie fonction de lancement de lecture d'album
-    toast({ title: "Lecture de l'album", message: album.title });
+    const tracks = getAlbumTracks(album.title);
+    if (tracks.length > 0) {
+      playTrack(tracks[0], tracks);
+    }
   };
 
   return (

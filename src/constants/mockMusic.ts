@@ -54,6 +54,7 @@ export const mockTracks: Track[] = [
     cover: mockAlbums[0].cover,
     duration: "3:20",
     isFavorite: true,
+    folderId: "f1",
   },
   {
     id: "t2",
@@ -62,6 +63,7 @@ export const mockTracks: Track[] = [
     album: "Blue Hour",
     cover: img("photo-1493225457124-a3eb161ffa5f", 240),
     duration: "3:02",
+    folderId: "f2",
   },
   {
     id: "t3",
@@ -70,6 +72,7 @@ export const mockTracks: Track[] = [
     album: "Afterglow",
     cover: mockAlbums[2].cover,
     duration: "3:43",
+    folderId: "f1",
   },
   {
     id: "t4",
@@ -79,6 +82,7 @@ export const mockTracks: Track[] = [
     cover: mockAlbums[3].cover,
     duration: "3:29",
     isFavorite: true,
+    folderId: "f3",
   },
   {
     id: "t5",
@@ -87,6 +91,7 @@ export const mockTracks: Track[] = [
     album: "No Signal",
     cover: mockAlbums[4].cover,
     duration: "4:01",
+    folderId: "f2",
   },
   {
     id: "t6",
@@ -95,6 +100,7 @@ export const mockTracks: Track[] = [
     album: "Blue Hour",
     cover: mockAlbums[1].cover,
     duration: "2:58",
+    folderId: "f1",
   },
 ];
 
@@ -165,6 +171,7 @@ export const mockPlaylists: Playlist[] = [
     trackCount: 24,
     duration: "1 h 32",
     updatedAt: "Aujourd'hui",
+    trackIds: ["t1", "t3", "t4", "t6"],
   },
   {
     id: "p2",
@@ -174,6 +181,7 @@ export const mockPlaylists: Playlist[] = [
     trackCount: 18,
     duration: "58 min",
     updatedAt: "Hier",
+    trackIds: ["t2", "t6", "t3"],
   },
   {
     id: "p3",
@@ -183,6 +191,7 @@ export const mockPlaylists: Playlist[] = [
     trackCount: 15,
     duration: "49 min",
     updatedAt: "Il y a 2 jours",
+    trackIds: ["t3", "t5", "t1"],
   },
   {
     id: "p4",
@@ -192,6 +201,7 @@ export const mockPlaylists: Playlist[] = [
     trackCount: 32,
     duration: "1 h 48",
     updatedAt: "Il y a 3 jours",
+    trackIds: ["t1", "t4", "t5"],
   },
   {
     id: "p5",
@@ -201,6 +211,7 @@ export const mockPlaylists: Playlist[] = [
     trackCount: 12,
     duration: "41 min",
     updatedAt: "Cette semaine",
+    trackIds: ["t2", "t4"],
   },
   {
     id: "p6",
@@ -210,5 +221,27 @@ export const mockPlaylists: Playlist[] = [
     trackCount: 20,
     duration: "1 h 12",
     updatedAt: "Cette semaine",
+    trackIds: ["t6", "t2", "t3"],
   },
 ];
+
+export const getFavoritesTracks = () => 
+  mockTracks.filter((track) => track.isFavorite);
+
+export const getAlbumTracks = (albumTitle: string) => 
+  mockTracks.filter((track) => track.album === albumTitle);
+
+export const getArtistTracks = (artistName: string) => 
+  mockTracks.filter((track) => track.artist === artistName);
+
+export const getFolderTracks = (folderId: string) => 
+  mockTracks.filter((track) => track.folderId === folderId);
+
+export const getPlaylistTracks = (playlistId: string) => {
+  const playlist = mockPlaylists.find((item) => item.id === playlistId);
+
+  if (!playlist?.trackIds) return [];
+
+  return playlist.trackIds.map((trackId) => 
+    mockTracks.find((track) => track.id === trackId)).filter((track): track is Track => Boolean(track));
+}

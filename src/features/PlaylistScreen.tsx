@@ -1,26 +1,32 @@
 import EmptyScreen from "@/components/EmptyScreen";
 import PlaylistCard from "@/components/PlaylistCard";
 import ScreenContainer from "@/components/ScreenContainer";
-import { mockPlaylists } from "@/constants/mockMusic";
+import { getPlaylistTracks, mockPlaylists } from "@/constants/mockMusic";
 import { Playlist } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
+import { usePlayer } from "@/hooks/usePlayer";
+import { openCollection } from "@/navigation/openCollection";
 import { toast } from "burnt";
 import { Plus, ListMusic, Shuffle } from "lucide-react-native";
 import { View, Pressable, Text, StyleSheet, FlatList } from "react-native";
 
 export default function PlaylistScreen() {
-  const theme = useTheme()
+  const theme = useTheme();
+  const { playTrack } = usePlayer();
 
   const handleCreatePlaylist = () => {
     toast({ title: "Création d'une nouvelle playlist" });
   };
 
   const handlePlaylistPress = (playlist: Playlist) => {
-   toast({ title:"Playlist sélectionnée", message: playlist.title});
+    openCollection("playlist", playlist.id);
   };
 
   const handlePlaylistPlay = (playlist: Playlist) => {
-    toast({ title:"Lecture de la playlist", message: playlist.title});
+    const tracks = getPlaylistTracks(playlist.id);
+    if (tracks.length > 0) {
+      playTrack(tracks[0], tracks);
+    }
   };
 
   const handlePlaylistMore = (playlist: Playlist) => {

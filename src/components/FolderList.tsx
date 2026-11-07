@@ -1,6 +1,6 @@
 import { mockFolders } from "@/constants/mockMusic";
 import { useTheme } from "@/hooks/use-theme";
-import { toast } from "burnt";
+import { openCollection } from "@/navigation/openCollection";
 import { ChevronRight, Folder } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import SectionHeader from "./SectionHeader";
@@ -20,9 +20,7 @@ export default function FolderList() {
         <Pressable
           key={folder.id}
           style={styles.row}
-          onPress={() =>
-            toast({ title: "Dossier ouvert", message: folder.name })
-          }
+          onPress={() => openCollection("folder", folder.id)}
         >
           <View
             style={[

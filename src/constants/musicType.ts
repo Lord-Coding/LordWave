@@ -1,4 +1,5 @@
 export type MusicCategory = "songs" | "artists" | "albums" | "folders";
+export type CollectionType = "playlist" | "album" | "artist" | "folder";
 
 export interface Album {
     id: string;
@@ -9,6 +10,15 @@ export interface Album {
     year: number;
 }
 
+export type MusicCollection = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  artwork?: string;
+  trackIds: string[];
+  description?: string;
+};
+
 export interface Track {
     id: string;
     title: string;
@@ -17,6 +27,7 @@ export interface Track {
     cover: string;
     duration: string;
     isFavorite?: boolean;
+    folderId?: string;
 }
 
 export interface Artist {
@@ -42,4 +53,5 @@ export interface Playlist {
     trackCount: number;
     duration: string;
     updatedAt: string;
+    trackIds?: string[];
 }

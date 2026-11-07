@@ -1,53 +1,118 @@
-# TODO — Feuille de route LordWave
+# LordWave — feuille de route V1
 
-Cette feuille de route décrit les prochaines étapes pour transformer l’interface actuelle en lecteur de musique local utilisable. Les priorités sont ordonnées par dépendance et par valeur pour une première version.
+## Objectif
 
-## P0 — Indispensable pour une première version fonctionnelle
+Finaliser un lecteur musical local pour Android avec Expo et React Native. La V1 doit parcourir et lire la musique présente sur le téléphone, fonctionner hors ligne, prendre en charge les favoris et playlists et continuer la lecture en arrière-plan.
 
-- [ ] **Définir le périmètre produit** : confirmer que LordWave lit la musique stockée sur l’appareil, les plateformes cibles, les formats pris en charge et le comportement attendu sans connexion Internet.
-- [ ] **Remplacer les données fictives** : définir une source unique pour les morceaux, albums et artistes, puis retirer progressivement les tableaux de démonstration de `src/constants/mockMusic.ts`.
-- [ ] **Accéder à la bibliothèque locale** : demander les autorisations nécessaires au bon moment, récupérer les fichiers audio et leurs métadonnées, et traiter proprement les refus, bibliothèques vides et erreurs de lecture.
-- [ ] **Construire un modèle de bibliothèque fiable** : gérer les identifiants, titres, artistes, albums, durées, pochettes et chemins/URI locaux, y compris les métadonnées manquantes ou incohérentes.
-- [ ] **Implémenter la lecture audio** : lire, mettre en pause, reprendre, passer au morceau suivant/précédent et déplacer la position de lecture ; gérer la fin d’un morceau et les erreurs de décodage ou de fichier inaccessible.
-- [ ] **Créer un état de lecture partagé** : exposer le morceau courant, la file d’attente, la position, la durée et les commandes afin que bibliothèque, mini-lecteur et écran de lecture restent synchronisés.
-- [ ] **Ajouter un mini-lecteur et un écran de lecture** : rendre les commandes principales accessibles pendant la navigation et afficher la pochette, les informations du morceau, la progression et les commandes.
-- [ ] **Fiabiliser la lecture en arrière-plan** : configurer et tester les contrôles de notification/écran verrouillé, les interruptions audio, le branchement/débranchement d’un casque et le retour de l’application au premier plan.
-- [ ] **Persister les données utilisateur** : sauvegarder les favoris et les playlists localement, restaurer l’état au redémarrage et définir un comportement cohérent si une base locale est indisponible ou corrompue.
+Pas de compte, backend, synchronisation cloud ni partage pour la V1. Privilégier les solutions locales et les dépendances gratuites.
 
-## P1 — Compléter les fonctionnalités principales
+## État actuel à garder en tête
 
-- [ ] **Rendre les favoris opérationnels** : l’écran Favoris et son état vide sont déjà en place dans `src/features/FavoritesScreen.tsx`, mais la liste est encore filtrée depuis `mockTracks`. La relier à la source de données réelle, permettre d’ajouter/retirer un favori depuis un morceau et refléter les changements immédiatement.
-- [ ] **Créer et gérer les playlists** : création, renommage, suppression, ajout/retrait de morceaux, ordre personnalisé et lancement de la lecture.
-- [ ] **Terminer la bibliothèque** : relier les catégories Chansons, Artistes, Albums et Dossiers aux données réelles ; ouvrir les détails associés et lancer la lecture depuis chaque vue.
-- [ ] **Implémenter la recherche** : rechercher parmi les morceaux, artistes et albums, avec résultats vides, effacement de la requête et comportement clavier adapté au mobile.
-- [ ] **Ajouter le tri et les filtres** : rendre fonctionnelle l’action « Trier » de l’écran Favoris (actuellement un `console.log`) ainsi que les autres actions de tri affichées ; proposer des critères prévisibles, par exemple titre, artiste, album ou date d’ajout.
-- [ ] **Gérer la file d’attente** : ajouter un morceau ou un album à la file, afficher et réordonner les prochains titres, retirer des éléments et distinguer lecture immédiate / lecture suivante.
-- [ ] **Permettre l’actualisation de la bibliothèque** : rescanner ou synchroniser les médias après ajout/suppression, sans perdre les favoris et playlists des éléments toujours présents.
-- [ ] **Ajouter les états d’interface manquants** : chargement, erreur récupérable, absence de permission, aucune musique trouvée et absence de connexion si une fonctionnalité en dépend.
+- Les dépendances `expo-media-library`, `expo-audio` et `expo-sqlite` sont déjà dans `package.json` ; leur présence ne signifie pas que les parcours fonctionnels sont terminés.
+- Les profils EAS `development`, `preview` (APK) et `production` (AAB) sont déjà définis dans `eas.json` ; les builds restent à valider sur téléphone.
+- Les écrans Favoris et Playlists ainsi que leurs états vides existent, mais utilisent encore des données fictives ou des actions provisoires.
+- `app.json` utilise actuellement le slug `LordWave` et l’identifiant Android `com.lordsama.lordwave`. Le document de référence propose `com.lordcoding.lordwave` : confirmer l’identifiant définitif avant une première publication, sans le changer à la légère.
+- Les permissions Android et la configuration audio sont déjà amorcées dans `app.json` ; vérifier qu’elles sont nécessaires et suffisantes pour la V1.
 
-## P2 — Qualité d’usage et robustesse
+## Ordre de traitement recommandé
 
-- [ ] **Harmoniser les interactions** : remplacer dans l’écran Favoris les toasts provisoires de sélection, d’options et de lecture aléatoire, ainsi que l’action « Trier » actuellement en `console.log`, par les actions réelles et des retours d’erreur compréhensibles.
-- [ ] **Soigner l’accessibilité** : libellés des boutons/icônes, zones tactiles adaptées, ordre de lecture, contraste, tailles de texte et prise en charge des lecteurs d’écran.
-- [ ] **Vérifier l’adaptation mobile** : contrôler les petits et grands écrans, zones sûres, barre d’onglets, clavier, gestes de retour et orientations prises en charge.
-- [ ] **Améliorer les performances** : optimiser les listes pour les grandes bibliothèques, limiter les rendus inutiles, charger les pochettes efficacement et éviter les traitements lourds sur le thread d’interface.
-- [ ] **Renforcer le mode hors ligne** : s’assurer que l’index, les favoris, playlists et pochettes restent exploitables sans réseau ; afficher une solution de repli lorsque les métadonnées sont absentes.
-- [ ] **Valider les thèmes clair et sombre** : vérifier les couleurs, états pressés, composants système et changements de thème sur iOS et Android.
-- [ ] **Ajouter les réglages utiles** : préférences de lecture pertinentes (lecture aléatoire, répétition, reprise éventuelle) et options de gestion/actualisation de la bibliothèque.
+### 1. Stabiliser le périmètre et la configuration
 
-## P3 — Tests, préparation et publication
+- [ ] Confirmer que la V1 cible Android et la musique locale hors ligne.
+- [ ] Confirmer les formats audio pris en charge et le comportement attendu sans permission ou sans morceau.
+- [ ] Confirmer l’identifiant Android définitif, le slug et le scheme de l’application.
+- [ ] Vérifier nom, icônes, écran de démarrage, permissions, plugins Expo et profils EAS.
+- [ ] Exécuter `npx expo-doctor` et `npx tsc --noEmit` ; corriger les problèmes bloquants.
+- [ ] Confirmer la séparation routes, écrans, composants, services et données, puis centraliser types et styles communs au fil des changements.
 
-- [ ] **Mettre en place des tests automatisés** : couvrir les commandes et transitions de lecture, la persistance des favoris/playlists, la recherche/tri et les états d’erreur importants.
-- [ ] **Définir une recette manuelle** : tester sur appareils et versions iOS/Android cibles les autorisations, les formats audio, l’arrière-plan, les interruptions, les écouteurs et la reprise après fermeture.
-- [ ] **Exécuter les contrôles du projet** : lint, vérification TypeScript, diagnostic Expo et builds de développement/préproduction ; corriger les régressions avant publication.
-- [ ] **Vérifier la configuration de publication** : nom, icônes, écran de lancement, identifiants, permissions réellement nécessaires, profils EAS et informations de confidentialité.
-- [ ] **Mettre à jour la documentation** : remplacer le README de démarrage Expo par les instructions d’installation, d’exécution, de test, de build et les limites connues de LordWave.
-- [ ] **Préparer une version de préproduction** : générer les builds de test, vérifier l’installation et la mise à jour, puis recueillir les retours avant la première version publique.
+### 2. Implémenter l’accès réel à la musique — prochaine grande étape
 
-## Critères de fin du MVP
+- [ ] Valider l’accès Android aux fichiers audio avec la version Expo du projet.
+- [ ] Demander la permission au moment utile, expliquer sa raison et gérer refus, accès limité et retour depuis les réglages.
+- [ ] Récupérer les morceaux accessibles et leurs URI locales ; afficher un état clair si la bibliothèque est vide.
+- [ ] Récupérer titre, artiste, album et durée ; prévoir des valeurs de remplacement lorsque les métadonnées manquent.
+- [ ] Filtrer les formats non pris en charge et éviter les doublons.
+- [ ] Tester les dossiers Music, Download, Bluetooth et les dossiers accessibles des applications.
+- [ ] Tester avec une grande bibliothèque ; prévoir l’actualisation, la détection des ajouts et suppressions et éviter les rescans complets inutiles.
+- [ ] Définir la stratégie des pochettes locales : métadonnées disponibles, pochette par défaut, cache et absence de dépendance aux images Internet.
 
-- La bibliothèque reflète les fichiers audio accessibles sur l’appareil, avec des états explicites si l’accès est refusé ou si aucun morceau n’est trouvé.
-- Un morceau peut être lancé, contrôlé depuis l’application et repris après navigation ; les comportements en arrière-plan annoncés sont validés sur appareils.
-- Les favoris et playlists survivent au redémarrage de l’application.
-- La recherche, les catégories de bibliothèque et les commandes visibles ne sont pas de simples placeholders.
-- Les parcours principaux fonctionnent sur les plateformes annoncées et passent les vérifications de lint et de types.
+**Validation :** les vrais morceaux accessibles sur le téléphone apparaissent sans connexion Internet, y compris avec métadonnées incomplètes, refus de permission ou bibliothèque vide.
+
+### 3. Construire et valider le moteur de lecture
+
+- [ ] Centraliser la lecture audio dans un service et un état partagés.
+- [ ] Lire un morceau depuis son URI locale ; gérer lecture, pause, reprise, suivant, précédent et fin de morceau.
+- [ ] Exposer morceau courant, durée et progression ; permettre le déplacement dans le morceau et afficher le temps écoulé.
+- [ ] Gérer les erreurs de lecture, fichiers illisibles ou disparus et changements rapides de morceau.
+- [ ] Créer une file d’attente : ajout, suppression, réorganisation et passage au morceau suivant.
+- [ ] Ajouter lecture aléatoire et répétition si elles sont retenues pour la V1.
+- [ ] Tester les formats courants et les interruptions audio, appels et branchements/débranchements d’écouteurs.
+
+**Validation :** un fichier local peut être lu, mis en pause, repris, parcouru et remplacé sans blocage.
+
+### 4. Assurer l’arrière-plan et les contrôles Android
+
+- [ ] Valider les capacités et la configuration Expo Audio pour la lecture Android en arrière-plan.
+- [ ] Vérifier les exigences du service média Android, les permissions et la notification persistante.
+- [ ] Afficher titre, artiste et pochette dans la notification quand disponibles.
+- [ ] Synchroniser précédent, lecture/pause et suivant entre notification, écran verrouillé et moteur audio.
+- [ ] Tester écran verrouillé, application en arrière-plan, retour à l’accueil, écouteurs et appareils Bluetooth.
+- [ ] Tester séparément le retrait des applications récentes et les restrictions de batterie selon les appareils.
+
+**Validation :** la lecture en arrière-plan et les commandes média fonctionnent dans les scénarios Android pris en charge. Le retrait des applications récentes peut varier selon Android et le fabricant.
+
+### 5. Persister bibliothèque et données utilisateur avec SQLite
+
+- [ ] Définir les tables, relations, migrations et transactions nécessaires pour morceaux indexés, favoris, playlists et morceaux d’une playlist.
+- [ ] Prévoir la gestion des erreurs et des données corrompues ou indisponibles.
+- [ ] Persister les favoris, synchroniser leur état dans les différentes vues et gérer les morceaux supprimés du téléphone.
+- [ ] Permettre de créer, modifier et supprimer une playlist, avec confirmation si nécessaire.
+- [ ] Ajouter et retirer des morceaux, gérer leur ordre et les éventuels doublons.
+- [ ] Calculer le nombre de morceaux et la durée réelle ; gérer les URI qui ne sont plus valides.
+- [ ] Enregistrer éventuellement le dernier morceau, la position et l’historique d’écoute si retenus pour la V1.
+
+**Validation :** favoris et playlists sont conservés après fermeture et réouverture de l’application.
+
+### 6. Connecter et terminer les écrans
+
+- [ ] Remplacer progressivement les données de démonstration de `mockMusic.ts` par les données locales.
+- [ ] Terminer Accueil et Bibliothèque : chansons, artistes, albums, dossiers, recherche, tri et états de chargement/erreur/vide.
+- [ ] Connecter Favoris à SQLite ; afficher le vrai nombre, lire ou mélanger les favoris, trier et retirer un favori depuis cet écran.
+- [ ] Connecter Playlists à SQLite ; finaliser création, tri, menu d’actions, état vide et page de détail (description, pochette, morceaux, lecture et mélange).
+- [ ] Créer l’écran « En lecture » et le mini-lecteur ; synchroniser contrôles, progression, favoris, file d’attente et notification.
+- [ ] Finaliser la recherche par titre, artiste et album, les catégories de résultats et les détails artiste/album nécessaires.
+- [ ] Ajouter les paramètres utiles : actualisation de la bibliothèque, permissions, préférences de lecture, thème et informations « À propos » si retenus.
+- [ ] Remplacer les toasts et `console.log` provisoires par les actions réelles, confirmations utiles et erreurs compréhensibles.
+
+### 7. Tester, optimiser et préparer la distribution
+
+- [ ] Vérifier l’accessibilité : libellés, zones tactiles, contraste, tailles de texte et lecteurs d’écran.
+- [ ] Tester zones sûres, navigation/retour Android, tailles d’écran et tailles de police augmentées.
+- [ ] Tester avec des centaines ou milliers de morceaux ; optimiser listes, chargement des pochettes, mémoire et batterie.
+- [ ] Tester fichiers déplacés, renommés, supprimés, URI invalides, formats non pris en charge et stockage presque plein.
+- [ ] Ajouter des tests automatisés pour lecture, persistance, favoris, playlists, recherche et erreurs importantes.
+- [ ] Générer un APK autonome avec le profil EAS `preview` et le tester sur téléphone sans Metro ni Development Client.
+- [ ] Tester permissions, bibliothèque, formats, lecture, favoris, playlists, arrière-plan, notifications, écran verrouillé, mode hors ligne, fermeture forcée et redémarrage du téléphone.
+- [ ] Valider le profil `production` (AAB), la signature, le keystore, les icônes, captures d’écran, description et politique de confidentialité avant publication éventuelle.
+- [ ] Retirer les logs inutiles, lancer lint, vérification TypeScript, Expo Doctor et build final.
+
+## Par quelle priorité commencer ?
+
+Après une courte vérification de configuration et la confirmation de l’identifiant Android, commence par **l’étape 2 : l’accès réel à la bibliothèque audio**. C’est le socle des écrans Accueil, Favoris et Playlists. Valide les permissions, la récupération des morceaux et les métadonnées sur un vrai téléphone avant d’investir dans SQLite ou la finition visuelle.
+
+## Contraintes de développement et de validation
+
+- Conserver le workflow EAS dans le cloud : ne pas utiliser `expo run:android` ni `eas build --local` dans ce projet.
+- Le profil `development` sert au Development Client avec Metro ; le profil `preview` doit produire un APK autonome testable sans serveur de développement.
+- La configuration seule ne prouve pas que la lecture en arrière-plan fonctionne : valider sur un véritable appareil Android.
+- `expo-image` affiche les pochettes mais ne suffit pas à extraire celles intégrées aux fichiers audio.
+- Remplacer progressivement les exemples de `mockMusic.ts` après validation des sources réelles et de leur modèle de données.
+
+## Critères d’acceptation V1
+
+- [ ] L’application Android s’installe de manière autonome et ne demande que les permissions nécessaires.
+- [ ] L’utilisateur peut parcourir et lire sa musique locale hors ligne, avec gestion des bibliothèques vides, accès refusé et fichiers indisponibles.
+- [ ] Lecture, pause, reprise, changement de morceau, file d’attente et contrôles Android sont fonctionnels dans les scénarios annoncés.
+- [ ] Favoris et playlists peuvent être gérés et restent présents après redémarrage.
+- [ ] Les écrans et commandes visibles sont reliés aux fonctionnalités réelles, sans placeholders majeurs.
+- [ ] Les parcours essentiels ont été testés sur un vrai téléphone Android et le build de distribution a été vérifié.

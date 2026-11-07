@@ -1,6 +1,6 @@
 import { mockArtists } from "@/constants/mockMusic";
 import { useTheme } from "@/hooks/use-theme";
-import { toast } from "burnt";
+import { openCollection } from "@/navigation/openCollection";
 import { Image } from "expo-image";
 import { ChevronRight } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -21,9 +21,7 @@ export default function ArtistList() {
         <Pressable
           key={artist.id}
           style={styles.row}
-          onPress={() =>
-            toast({ title: "Artiste sélectionné", message: artist.name })
-          }
+          onPress={() => openCollection("artist", artist.id)}
         >
           <Image
             source={{ uri: artist.cover }}

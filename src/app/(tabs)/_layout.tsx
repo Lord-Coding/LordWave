@@ -1,3 +1,4 @@
+import MiniPlayer from "@/components/MiniPlayer";
 import { FontSize } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -58,6 +59,11 @@ export default function TabsLayout() {
         },
         tabBarHideOnKeyboard: true,
       }}
+      tabBar={(props) => (
+        <View style={{ backgroundColor: theme.backgroundElement }}>
+          <MiniPlayer />
+        </View>
+      )}
     >
       <Tabs.Screen
         name="playlist"

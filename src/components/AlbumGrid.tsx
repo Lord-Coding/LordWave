@@ -1,6 +1,6 @@
 import { mockAlbums } from "@/constants/mockMusic";
 import { useTheme } from "@/hooks/use-theme";
-import { toast } from "burnt";
+import { openCollection } from "@/navigation/openCollection";
 import { Image } from "expo-image";
 import { Play } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -22,9 +22,7 @@ export default function AlbumGrid() {
           <Pressable
             key={album.id}
             style={styles.card}
-            onPress={() =>
-              toast({ title: "Album sélectionné", message: album.title })
-            }
+            onPress={() => openCollection("album", album.id)}
           >
             <View
               style={[

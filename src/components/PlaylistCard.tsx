@@ -1,3 +1,4 @@
+import { getPlaylistTracks } from "@/constants/mockMusic";
 import { Playlist } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
 import { Pressable, StyleSheet, View, Text } from "react-native";
@@ -13,6 +14,7 @@ interface Props {
 
 export default function PlaylistCard({playlist, onPress, onPlay, onMore}: Props) {
     const theme = useTheme();
+    const availableTrackCount = getPlaylistTracks(playlist.id).length;
 
     return (
         <Pressable 
@@ -50,7 +52,7 @@ export default function PlaylistCard({playlist, onPress, onPlay, onMore}: Props)
 
                 <View style={styles.trackBadge}>
                     <Music2 size={11} color={theme.white} />
-                    <Text style={[styles.trackCount, {color: theme.white}]}>{playlist.trackCount}</Text>
+                    <Text style={[styles.trackCount, {color: theme.white}]}>{availableTrackCount}</Text>
                 </View>
             </View>
 

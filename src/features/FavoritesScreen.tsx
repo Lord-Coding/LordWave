@@ -1,10 +1,10 @@
-import EmptyScreen from "@/components/EmptyScreen";
 import ScreenContainer from "@/components/ScreenContainer";
 import SectionHeader from "@/components/SectionHeader";
 import TrackItem from "@/components/TrackItem";
-import { mockTracks } from "@/constants/mockMusic";
+import { getFavoritesTracks } from "@/constants/mockMusic";
 import { Track } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
+import { usePlayer } from "@/hooks/usePlayer";
 import { toast } from "burnt";
 import { Heart, Shuffle } from "lucide-react-native";
 import { useMemo } from "react";
@@ -12,10 +12,11 @@ import { View, StyleSheet, Text, Pressable, FlatList } from "react-native";
 
 export default function FavoritesScreen() {
   const theme = useTheme();
-  const favoriteTracks = useMemo(() => mockTracks.filter((track) => track.isFavorite), []);
+  const { playTrack } = usePlayer();
+  const favoriteTracks = useMemo(() => getFavoritesTracks(), []);
 
   const handleTrackPress = (track: Track) => {
-    toast({ title: "Favori sélectionné", message: track.title});
+    playTrack(track, favoriteTracks);
   }
 
   const handleTrackMore = (track: Track) => {
@@ -23,7 +24,10 @@ export default function FavoritesScreen() {
   }
 
   const handleShuffle = () => {
-    toast({ title: "Lecture aléatoire des favoris"});
+    if (favoriteTracks.length === 0) return;
+
+    const shuffledTracks = [...favoriteTracks].sort(() => Math.random() - 0.5);
+    playTrack(shuffledTracks[0], shuffledTracks);
   }
 
   const renderHeader = () => (

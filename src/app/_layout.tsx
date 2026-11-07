@@ -1,4 +1,5 @@
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
+import { PlayerProvider } from "@/context/PlayerContext";
 import { ThemeProvider } from "@/context/theme-context";
 import { useTheme } from "@/hooks/use-theme";
 import { Stack } from "expo-router";
@@ -11,10 +12,11 @@ SplashScreen.preventAutoHideAsync();
 export default function App() {
   return (
     <ThemeProvider>
-      <AnimatedSplashOverlay />
-      <StatusBar />
-
-      <RootNavigation />
+      <PlayerProvider>
+        <AnimatedSplashOverlay />
+        <StatusBar />
+        <RootNavigation />
+      </PlayerProvider>
     </ThemeProvider>
   );
 }
@@ -34,6 +36,27 @@ const RootNavigation = () => {
       >
         <Stack.Screen 
           name="(tabs)"
+          options={{
+            headerShown: false
+          }}
+        />
+
+        <Stack.Screen 
+          name="now-playing"
+          options={{
+            headerShown: false
+          }}
+        />
+
+        <Stack.Screen 
+          name="tails"
+          options={{
+            headerShown: false
+          }}
+        />
+
+        <Stack.Screen 
+          name="details/[type]/[id]"
           options={{
             headerShown: false
           }}

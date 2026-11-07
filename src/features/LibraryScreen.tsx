@@ -8,6 +8,7 @@ import TrackItem from "@/components/TrackItem";
 import { mockTracks } from "@/constants/mockMusic";
 import { MusicCategory, Track } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
+import { usePlayer } from "@/hooks/usePlayer";
 import { Ionicons } from "@expo/vector-icons";
 import { toast } from "burnt";
 import { ListFilter, Music2, Shuffle } from "lucide-react-native";
@@ -16,6 +17,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function LibraryScreen() {
   const theme = useTheme();
+  const { playTrack } = usePlayer();
   const [selectedCategory, setSelectedCategory] =
     useState<MusicCategory>("songs");
 
@@ -26,8 +28,8 @@ export default function LibraryScreen() {
   }, []);
 
   const handleTrackPress = useCallback((track: Track) => {
-    toast({ title: "Morceau sélectionné", message: track.title });
-  }, []);
+    playTrack(track, mockTracks);
+  }, [playTrack]);
 
   const renderHeader = useCallback(
     () => (

@@ -1,56 +1,83 @@
-# Welcome to your Expo app 👋
+# LordWave
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+LordWave est un projet de lecteur musical local pour Android, développé avec Expo et React Native. L’objectif est de parcourir et lire la musique présente sur le téléphone, hors ligne, avec des favoris et des playlists.
 
-## Get started
+> **État du projet :** l’interface est en cours de développement et utilise encore des données de démonstration. La découverte de la bibliothèque musicale, la lecture audio et la persistance des favoris et playlists restent à implémenter et à valider sur un appareil Android.
 
-1. Install dependencies
+## Fonctionnalités prévues
 
-   ```bash
-   npm install
-   ```
+- Parcourir les morceaux, artistes, albums et dossiers présents sur l’appareil.
+- Lire la musique hors ligne et contrôler la lecture en arrière-plan.
+- Gérer les favoris et les playlists localement.
+- Rechercher et trier la bibliothèque musicale.
 
-2. Start the app
+## Prérequis
 
-   ```bash
-   npx expo start
-   ```
+- Node.js et npm.
+- Un téléphone Android ou un environnement de développement Android compatible.
+- Un compte Expo/EAS pour créer les builds Android dans le cloud.
 
-In the output, you'll find options to open the app in a
+Le projet utilise Expo SDK 58, Expo Router, React Native et TypeScript. Les dépendances `expo-media-library`, `expo-audio` et `expo-sqlite` sont déjà déclarées, mais leur présence ne signifie pas que les fonctionnalités associées sont terminées.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Installation et lancement
 
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Depuis la racine du projet :
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Pour ouvrir la version Web ou iOS en développement :
 
-### Other setup steps
+```bash
+npm run web
+npm run ios
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Le projet cible en priorité Android. Pour tester les fonctionnalités natives et la configuration audio, utilisez un **development build** plutôt qu’Expo Go. Le workflow du projet utilise les builds EAS dans le cloud ; aucun build Android local avec `expo run:android` ou `eas build --local` n’est prévu.
 
-## Learn more
+## Builds Android avec EAS
 
-To learn more about developing your project with Expo, look at the following resources:
+Connectez-vous à EAS si nécessaire :
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npx eas-cli@latest login
+```
 
-## Join the community
+Les profils sont définis dans [eas.json](./eas.json) :
 
-Join our community of developers creating universal apps.
+```bash
+# Client de développement (APK)
+npx eas-cli@latest build --platform android --profile development
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+# APK autonome de test
+npx eas-cli@latest build --platform android --profile preview
+
+# Build de production (AAB)
+npx eas-cli@latest build --platform android --profile production
+```
+
+Le profil `development` nécessite un Development Client et s’utilise avec Metro. Le profil `preview` produit un APK installable pour les tests sans serveur de développement. Le profil `production` produit un Android App Bundle (AAB).
+
+La lecture en arrière-plan, les notifications et les permissions doivent être vérifiées sur un véritable appareil Android ; la configuration seule ne garantit pas leur bon fonctionnement.
+
+## Vérifications
+
+```bash
+npx tsc --noEmit
+npx expo-doctor
+npm run lint
+```
+
+La configuration ESLint peut devoir être installée avant que la commande de lint fonctionne.
+
+## Organisation du code
+
+- `src/app/` : routes Expo Router et navigation par onglets.
+- `src/features/` : écrans Bibliothèque, Favoris et Playlists.
+- `src/components/` : composants d’interface réutilisables.
+- `src/constants/` : types, thème et données de démonstration (`mockMusic.ts`).
+- `src/hooks/` et `src/context/` : hooks et contexte du thème.
+
+Les prochaines étapes de développement et critères de validation sont décrits dans [TODO.md](./TODO.md).
