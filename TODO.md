@@ -28,38 +28,44 @@ Pas de compte, backend, synchronisation cloud ni partage pour la V1. Privilégie
 ### 2. Implémenter l’accès réel à la musique — prochaine grande étape
 
 - [ ] Valider l’accès Android aux fichiers audio avec la version Expo du projet.
-- [ ] Demander la permission au moment utile, expliquer sa raison et gérer refus, accès limité et retour depuis les réglages.
-- [ ] Récupérer les morceaux accessibles et leurs URI locales ; afficher un état clair si la bibliothèque est vide.
-- [ ] Récupérer titre, artiste, album et durée ; prévoir des valeurs de remplacement lorsque les métadonnées manquent.
-- [ ] Filtrer les formats non pris en charge et éviter les doublons.
+- [x] Demander la permission au moment utile, expliquer sa raison et gérer refus, accès limité et retour depuis les réglages.
+- [x] Récupérer les morceaux accessibles et leurs URI locales ; afficher un état clair si la bibliothèque est vide.
+- [x] Récupérer les tags titre, artiste et album ; utiliser le nom de fichier et la durée MediaLibrary disponibles, avec des valeurs de remplacement lorsque les métadonnées manquent.
+- [x] Filtrer les formats non pris en charge et éviter les doublons.
 - [ ] Tester les dossiers Music, Download, Bluetooth et les dossiers accessibles des applications.
 - [ ] Tester avec une grande bibliothèque ; prévoir l’actualisation, la détection des ajouts et suppressions et éviter les rescans complets inutiles.
-- [ ] Définir la stratégie des pochettes locales : métadonnées disponibles, pochette par défaut, cache et absence de dépendance aux images Internet.
+- [x] Extraire et mettre en cache la pochette intégrée quand elle existe ; conserver le visuel local de remplacement sans réseau lorsqu’elle manque.
+
+**Travail réalisé :** l’écran Bibliothèque demande l’autorisation audio Android à la première utilisation, explique son usage, propose les réglages après un refus définitif et actualise la permission au retour dans l’application. Les assets audio sont lus par pages de 100, filtrés par extension et dédupliqués par identifiant ; chaque résultat garde son URI locale pour la lecture hors ligne. `react-native-audio-metadata` lit les tags titre, artiste, album et durée sur Android et iOS, avec les formats `artiste - titre` et `artiste - album - titre` ainsi que des valeurs de remplacement si un tag manque ou ne peut pas être lu. Les dossiers d’origine ne sont pas exposés par MediaLibrary et restent à traiter séparément. Une pochette de remplacement fournie dans l’application est affichée sans réseau. L’accès et les formats restent à valider sur téléphone.
 
 **Validation :** les vrais morceaux accessibles sur le téléphone apparaissent sans connexion Internet, y compris avec métadonnées incomplètes, refus de permission ou bibliothèque vide.
 
 ### 3. Construire et valider le moteur de lecture
 
-- [ ] Centraliser la lecture audio dans un service et un état partagés.
-- [ ] Lire un morceau depuis son URI locale ; gérer lecture, pause, reprise, suivant, précédent et fin de morceau.
-- [ ] Exposer morceau courant, durée et progression ; permettre le déplacement dans le morceau et afficher le temps écoulé.
-- [ ] Gérer les erreurs de lecture, fichiers illisibles ou disparus et changements rapides de morceau.
-- [ ] Créer une file d’attente : ajout, suppression, réorganisation et passage au morceau suivant.
-- [ ] Ajouter lecture aléatoire et répétition si elles sont retenues pour la V1.
+- [x] Centraliser la lecture audio dans un service et un état partagés.
+- [x] Lire un morceau depuis son URI locale ; gérer lecture, pause, reprise, suivant, précédent et fin de morceau.
+- [x] Exposer morceau courant, durée et progression ; permettre le déplacement dans le morceau et afficher le temps écoulé.
+- [x] Gérer les erreurs natives de lecture Android et les fichiers locaux déjà disparus ; protéger les métadonnées et pochettes asynchrones contre les changements rapides de morceau.
+- [x] Créer une file d’attente : ajout, suppression, réorganisation et passage au morceau suivant.
+- [x] Ajouter lecture aléatoire et répétition si elles sont retenues pour la V1.
 - [ ] Tester les formats courants et les interruptions audio, appels et branchements/débranchements d’écouteurs.
+
+**Travail réalisé :** le contexte partagé utilise Expo Audio pour charger et lire l’URI du morceau choisi, reflète le temps et la durée du lecteur natif, applique le volume et gère la pause, la reprise, la recherche temporelle, la file, précédent/suivant, le mélange et la répétition à la fin. Les fichiers locaux disparus sont refusés avant le démarrage ; les erreurs de lecture Android sont relayées à l’interface avec le titre et une indication pour passer au morceau suivant. Les résultats d’extraction de pochette obsolètes sont écartés quand la sélection change. Les erreurs de décodage iOS restent à valider sur appareil.
 
 **Validation :** un fichier local peut être lu, mis en pause, repris, parcouru et remplacé sans blocage.
 
 ### 4. Assurer l’arrière-plan et les contrôles Android
 
-- [ ] Valider les capacités et la configuration Expo Audio pour la lecture Android en arrière-plan.
-- [ ] Vérifier les exigences du service média Android, les permissions et la notification persistante.
-- [ ] Afficher titre, artiste et pochette dans la notification quand disponibles.
-- [ ] Synchroniser précédent, lecture/pause et suivant entre notification, écran verrouillé et moteur audio.
+- [x] Valider les capacités et la configuration Expo Audio pour la lecture Android en arrière-plan.
+- [x] Vérifier les exigences du service média Android, déclarer les permissions et demander l’autorisation des notifications sur Android.
+- [x] Afficher titre, artiste et pochette extraite localement dans la notification Android quand disponibles.
+- [x] Synchroniser précédent, lecture/pause et suivant entre notification, écran verrouillé et moteur audio.
 - [ ] Tester écran verrouillé, application en arrière-plan, retour à l’accueil, écouteurs et appareils Bluetooth.
 - [ ] Tester séparément le retrait des applications récentes et les restrictions de batterie selon les appareils.
 
-**Validation :** la lecture en arrière-plan et les commandes média fonctionnent dans les scénarios Android pris en charge. Le retrait des applications récentes peut varier selon Android et le fabricant.
+**Travail réalisé :** le lecteur partagé utilise `useAudioPlaylist`, dont le service média Android relaie les commandes précédent/suivant au moteur. La file, le morceau courant, la progression, la répétition et les commandes de notification sont synchronisés avec l’index de la playlist native. Le mode arrière-plan et le service média sont configurés dans Expo ; l’application demande aussi la permission de notifications Android. Les métadonnées texte et les pochettes disponibles sont transmises. La pochette intégrée est extraite à la demande, mise en cache localement et associée à la notification ; sans pochette, l’interface utilise le visuel de remplacement intégré à l’application. Le rendu de notification doit encore être validé sur appareil Android.
+
+**Validation :** la configuration et le raccordement sont implémentés, mais le fonctionnement réel de la notification persistante, de l’écran verrouillé et des interruptions reste à vérifier avec un build EAS sur un appareil Android. Le retrait des applications récentes peut varier selon Android et le fabricant.
 
 ### 5. Persister bibliothèque et données utilisateur avec SQLite
 

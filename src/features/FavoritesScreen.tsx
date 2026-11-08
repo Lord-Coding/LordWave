@@ -1,7 +1,6 @@
 import ScreenContainer from "@/components/ScreenContainer";
 import SectionHeader from "@/components/SectionHeader";
 import TrackItem from "@/components/TrackItem";
-import { mockTracks } from "@/constants/mockMusic";
 import { Track } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
 import { usePlayer } from "@/hooks/usePlayer";
@@ -13,10 +12,10 @@ import { View, StyleSheet, Text, FlatList } from "react-native";
 
 export default function FavoritesScreen() {
   const theme = useTheme();
-  const { playTrack, favoriteTrackIds } = usePlayer();
+  const { playTrack, favoriteTrackIds, libraryTracks } = usePlayer();
   const favoriteTracks = useMemo(
-    () => mockTracks.filter((track) => favoriteTrackIds.includes(track.id)),
-    [favoriteTrackIds],
+    () => libraryTracks.filter((track) => favoriteTrackIds.includes(track.id)),
+    [favoriteTrackIds, libraryTracks],
   );
 
   const handleTrackPress = (track: Track) => {

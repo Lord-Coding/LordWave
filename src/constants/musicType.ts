@@ -26,6 +26,8 @@ export interface Track {
     album: string;
     cover: string;
     duration: string;
+    durationSeconds?: number;
+    uri?: string;
     isFavorite?: boolean;
     folderId?: string;
 }

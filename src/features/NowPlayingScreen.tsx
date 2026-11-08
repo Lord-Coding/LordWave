@@ -51,6 +51,8 @@ export default function NowPlayingScreen() {
     toggleShuffle,
     toggleRepeat,
     tail,
+    duration: playerDuration,
+    playbackError,
   } = usePlayer();
   const artworkSize = Math.min(width - 44, height * 0.36, 380);
   const isFavorite = favoriteTrackIds.includes(currentTrack?.id ?? "");
@@ -70,7 +72,7 @@ export default function NowPlayingScreen() {
     );
   }
 
-  const duration = durationToSeconds(currentTrack.duration);
+  const duration = playerDuration || currentTrack.durationSeconds || durationToSeconds(currentTrack.duration);
 
   return (
     <SafeAreaView
@@ -107,7 +109,7 @@ export default function NowPlayingScreen() {
 
       <View style={styles.content}>
         <Image
-          source={{ uri: currentTrack.cover }}
+          source={currentTrack.cover ? { uri: currentTrack.cover } : require("../../assets/images/explore.png")}
           style={[styles.artwork, { width: artworkSize, height: artworkSize }]}
           contentFit="cover"
           transition={200}
@@ -124,6 +126,11 @@ export default function NowPlayingScreen() {
             <Text style={[styles.artist, { color: theme.textSecondary }]}>
               {currentTrack.artist}
             </Text>
+            {playbackError ? (
+              <Text style={[styles.playbackError, { color: theme.danger }]}>
+                {playbackError}
+              </Text>
+            ) : null}
           </View>
 
           <Pressable
@@ -157,7 +164,7 @@ export default function NowPlayingScreen() {
               {formatTime(currentTime)}
             </Text>
             <Text style={[styles.time, { color: theme.textSecondary }]}>
-              {currentTrack.duration}
+              {formatTime(duration)}
             </Text>
           </View>
         </View>
@@ -297,6 +304,9 @@ const styles = StyleSheet.create({
   },
   artist: {
     fontSize: 15,
+  },
+  playbackError: {
+    fontSize: 11,
   },
   progressContainer: {
     gap: 2,

@@ -26,7 +26,7 @@ export default function TrackItem({ track, onPress, onMore }: Props) {
             ]}
         >
             <Image 
-                source={{ uri: track.cover }}
+                source={track.cover ? { uri: track.cover } : require("../../assets/images/explore.png")}
                 style={[styles.cover, {backgroundColor: theme.backgroundElement}]}
                 contentFit="cover"
                 transition={150}

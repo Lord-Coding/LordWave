@@ -1,37 +1,117 @@
-import AlbumGrid from "@/components/AlbumGrid";
-import ArtistList from "@/components/ArtistList";
 import CategorySelector from "@/components/CategorySelector";
-import FolderList from "@/components/FolderList";
-import RecommendedAlbums from "@/components/RecommendedAlbums";
 import ScreenContainer from "@/components/ScreenContainer";
 import TrackItem from "@/components/TrackItem";
-import { mockTracks } from "@/constants/mockMusic";
 import { MusicCategory, Track } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
 import { usePlayer } from "@/hooks/usePlayer";
 import { RipplePressable as Pressable } from "@/components/RipplePressable";
+import { getDeviceMusic } from "@/services/deviceMusic";
+import {
+  getPermissionsAsync,
+  requestPermissionsAsync,
+  addListener,
+  type PermissionResponse,
+} from "expo-media-library";
 import { toast } from "burnt";
-import { ListFilter, Music2, Search, Shuffle, X } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
-import { FlatList, Keyboard, StyleSheet, Text, TextInput, View } from "react-native";
+import { Music2, RefreshCw, Search, Shuffle, X } from "lucide-react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  AppState,
+  FlatList,
+  Keyboard,
+  Linking,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+
+type LibraryGroup = {
+  type: "artist" | "album";
+  name: string;
+  tracks: Track[];
+};
 
 export default function LibraryScreen() {
   const theme = useTheme();
-  const { playTrack } = usePlayer();
+  const { playTrack, libraryTracks, setLibraryTracks } = usePlayer();
   const [selectedCategory, setSelectedCategory] =
     useState<MusicCategory>("songs");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [permission, setPermission] = useState<PermissionResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const scanInProgress = useRef(false);
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
   const filteredTracks = useMemo(
     () =>
-      mockTracks.filter((track) =>
+      libraryTracks.filter((track) =>
         [track.title, track.artist, track.album].some((value) =>
           value.toLocaleLowerCase().includes(normalizedQuery),
         ),
       ),
-    [normalizedQuery],
+    [libraryTracks, normalizedQuery],
   );
+
+  const refreshLibrary = useCallback(async () => {
+    if (Platform.OS !== "android" || scanInProgress.current) return;
+
+    scanInProgress.current = true;
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const currentPermission = await getPermissionsAsync(false, ["audio"]);
+      setPermission(currentPermission);
+      if (!currentPermission.granted) {
+        setLibraryTracks([]);
+        return;
+      }
+
+      setLibraryTracks(await getDeviceMusic());
+    } catch (error) {
+      console.error("Impossible de charger la bibliothèque audio locale.", error);
+      setLoadError("La bibliothèque musicale n’a pas pu être chargée. Réessayez.");
+    } finally {
+      scanInProgress.current = false;
+      setIsLoading(false);
+    }
+  }, [setLibraryTracks]);
+
+  useEffect(() => {
+    void refreshLibrary();
+    const subscription = addListener(() => {
+      void refreshLibrary();
+    });
+    const appStateSubscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") void refreshLibrary();
+    });
+    return () => {
+      subscription.remove();
+      appStateSubscription.remove();
+    };
+  }, [refreshLibrary]);
+
+  const requestLibraryAccess = useCallback(async () => {
+    if (Platform.OS !== "android") return;
+    setIsRequestingPermission(true);
+    setLoadError(null);
+    try {
+      const response = await requestPermissionsAsync(false, ["audio"]);
+      setPermission(response);
+      if (response.granted) {
+        await refreshLibrary();
+      }
+    } catch (error) {
+      console.error("Impossible de demander l’accès à la musique.", error);
+      setLoadError("La demande d’autorisation a échoué. Réessayez.");
+    } finally {
+      setIsRequestingPermission(false);
+    }
+  }, [refreshLibrary]);
 
   const handleCategoryChange = useCallback((category: MusicCategory) => {
     setSelectedCategory(category);
@@ -39,9 +119,44 @@ export default function LibraryScreen() {
     toast({ title: "Catégorie sélectionnée", message: category });
   }, []);
 
-  const handleTrackPress = useCallback((track: Track) => {
-    playTrack(track, mockTracks);
-  }, [playTrack]);
+  const handleTrackPress = useCallback((track: Track) => playTrack(track, libraryTracks), [libraryTracks, playTrack]);
+
+  const artists = useMemo(() => {
+    const query = normalizedQuery;
+    return Array.from(new Set(libraryTracks.map((track) => track.artist)))
+      .filter((artist) => artist.toLocaleLowerCase().includes(query))
+      .map((artist) => ({
+        artist,
+        tracks: libraryTracks.filter((track) => track.artist === artist),
+      }));
+  }, [libraryTracks, normalizedQuery]);
+
+  const albums = useMemo(() => {
+    const query = normalizedQuery;
+    return Array.from(new Set(libraryTracks.map((track) => track.album)))
+      .filter((album) => album.toLocaleLowerCase().includes(query))
+      .map((album) => ({
+        album,
+        tracks: libraryTracks.filter((track) => track.album === album),
+      }));
+  }, [libraryTracks, normalizedQuery]);
+
+  const listData = useMemo<(Track | LibraryGroup)[]>(() => {
+    if (selectedCategory === "songs") return filteredTracks;
+    if (selectedCategory === "artists") {
+      return artists.map(({ artist, tracks }) => ({ type: "artist", name: artist, tracks }));
+    }
+    if (selectedCategory === "albums") {
+      return albums.map(({ album, tracks }) => ({ type: "album", name: album, tracks }));
+    }
+    return [];
+  }, [albums, artists, filteredTracks, selectedCategory]);
+
+  const handleShuffle = useCallback(() => {
+    if (filteredTracks.length === 0) return;
+    const shuffled = [...filteredTracks].sort(() => Math.random() - 0.5);
+    playTrack(shuffled[0], shuffled);
+  }, [filteredTracks, playTrack]);
 
   const renderHeader = useCallback(
     () => (
@@ -51,60 +166,128 @@ export default function LibraryScreen() {
           onSelect={handleCategoryChange}
         />
 
-        {selectedCategory === "songs" && (
-          <>
-            {!normalizedQuery && <RecommendedAlbums />}
-
-            {!normalizedQuery && <View style={styles.quickRow}>
+        {selectedCategory === "songs" && !normalizedQuery && libraryTracks.length > 0 && (
+          <View style={styles.quickRow}>
               <View style={styles.quickLabel}>
                 <Music2 size={20} color={theme.primary} />
 
                 <Text style={[styles.heading, { color: theme.text }]}>
-                  Toutes les chansons
+                  {libraryTracks.length} morceaux sur cet appareil
                 </Text>
               </View>
 
               <View style={styles.actions}>
                 <Pressable
-                  onPress={() => toast({ title: "Lecture aléatoire" })}
+                  onPress={handleShuffle}
                   hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel="Mélanger les morceaux"
                 >
                   <Shuffle size={19} color={theme.textSecondary} />
                 </Pressable>
 
                 <Pressable
-                  onPress={() => console.log("[LordWave] Option de liste")}
+                  onPress={() => void refreshLibrary()}
                   hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel="Actualiser la bibliothèque"
                 >
-                  <ListFilter size={19} color={theme.textSecondary} />
+                  <RefreshCw size={19} color={theme.textSecondary} />
                 </Pressable>
               </View>
-            </View>}
-          </>
+          </View>
         )}
-
-        {selectedCategory === "artists" && <ArtistList searchQuery={searchQuery} />}
-
-        {selectedCategory === "albums" && <AlbumGrid searchQuery={searchQuery} />}
-
-        {selectedCategory === "folders" && <FolderList searchQuery={searchQuery} />}
+        {loadError ? (
+          <Text style={[styles.error, { color: theme.danger }]}>{loadError}</Text>
+        ) : null}
       </View>
     ),
-    [selectedCategory, searchQuery, normalizedQuery, theme, handleCategoryChange],
+    [selectedCategory, normalizedQuery, libraryTracks, theme, handleCategoryChange, handleShuffle, refreshLibrary],
   );
 
   const renderTrack = useCallback(
-    ({ item }: { item: Track }) => (
-      <TrackItem
-        track={item}
-        onPress={handleTrackPress}
-        onMore={(track) =>
-          console.log("[LordWave] Menu du morceau :", track.title)
-        }
-      />
-    ),
-    [handleTrackPress],
+    ({ item }: { item: Track | LibraryGroup }) => {
+      if ("tracks" in item) {
+        return (
+          <Pressable
+            style={styles.collectionRow}
+            onPress={() => playTrack(item.tracks[0], item.tracks)}
+          >
+            <Text style={[styles.collectionTitle, { color: theme.text }]}>{item.name}</Text>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+              {item.tracks.length} morceau{item.tracks.length === 1 ? "" : "x"}
+            </Text>
+          </Pressable>
+        );
+      }
+
+      return (
+        <TrackItem
+          track={item}
+          onPress={handleTrackPress}
+          onMore={(track) => toast({ title: "Morceau local", message: track.title })}
+        />
+      );
+    },
+    [handleTrackPress, playTrack, theme],
   );
+
+  if (Platform.OS !== "android") {
+    return (
+      <ScreenContainer>
+        <View style={styles.permissionState}>
+          <Text style={[styles.heading, { color: theme.text }]}>
+            Bibliothèque locale Android
+          </Text>
+          <Text style={[styles.permissionDescription, { color: theme.textSecondary }]}>
+            L’accès aux fichiers musicaux de cette version est disponible sur Android.
+          </Text>
+        </View>
+      </ScreenContainer>
+    );
+  }
+
+  if (!permission?.granted) {
+    if (permission === null && isLoading) {
+      return (
+        <ScreenContainer>
+          <View style={styles.permissionState}>
+            <ActivityIndicator color={theme.primary} />
+            <Text style={[styles.permissionDescription, { color: theme.textSecondary }]}>
+              Vérification de l’accès à la bibliothèque…
+            </Text>
+          </View>
+        </ScreenContainer>
+      );
+    }
+
+    return (
+      <ScreenContainer>
+        <View style={styles.permissionState}>
+          <Music2 size={38} color={theme.primary} />
+          <Text style={[styles.title, { color: theme.text }]}>Accéder à votre musique</Text>
+          <Text style={[styles.permissionDescription, { color: theme.textSecondary }]}>
+            LordWave a besoin de l’autorisation audio Android pour afficher et lire les morceaux enregistrés sur cet appareil. Vos fichiers restent sur votre téléphone.
+          </Text>
+          {loadError ? <Text style={[styles.error, { color: theme.danger }]}>{loadError}</Text> : null}
+          <Pressable
+            onPress={permission?.canAskAgain === false ? () => void Linking.openSettings() : requestLibraryAccess}
+            style={[styles.permissionButton, { backgroundColor: theme.primary }]}
+            disabled={isRequestingPermission}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.permissionButtonText, { color: theme.white }]}>
+              {isRequestingPermission
+                ? "Demande en cours…"
+                : permission?.canAskAgain === false
+                  ? "Ouvrir les réglages"
+                  : "Autoriser l’accès"}
+            </Text>
+          </Pressable>
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer>
@@ -116,7 +299,7 @@ export default function LibraryScreen() {
             <>
               <Text style={[styles.title, {color: theme.text}]}>Ma Bibliothèque</Text>
               <Text style={[styles.subtitle, {color: theme.textSecondary}]}>
-                Retrouvez tous vos morceaux, albums et artistes.
+                Musique enregistrée sur cet appareil.
               </Text>
             </>
           )}
@@ -172,20 +355,38 @@ export default function LibraryScreen() {
       <FlatList
         style={styles.list}
         contentContainerStyle={styles.content}
-        data={selectedCategory === "songs" ? filteredTracks : []}
-        keyExtractor={(item) => item.id}
+        data={listData}
+        keyExtractor={(item) => "tracks" in item ? `${item.type}:${item.name}` : item.id}
         renderItem={renderTrack}
         ListHeaderComponent={renderHeader}
         showsVerticalScrollIndicator={false}
         initialNumToRender={8}
         windowSize={7}
-        ListEmptyComponent={
-          selectedCategory === "songs" && normalizedQuery ? (
-            <Text style={[styles.noResults, { color: theme.textSecondary }]}>
-              Aucun morceau trouvé pour « {searchQuery.trim()} ».
-            </Text>
-          ) : undefined
-        }
+        ListEmptyComponent={isLoading ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator color={theme.primary} />
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Chargement des morceaux…</Text>
+          </View>
+        ) : loadError ? (
+          <View style={styles.loadingState}>
+            <Text style={[styles.error, { color: theme.danger }]}>{loadError}</Text>
+            <Pressable onPress={() => void refreshLibrary()} accessibilityRole="button">
+              <Text style={{ color: theme.primary }}>Réessayer</Text>
+            </Pressable>
+          </View>
+        ) : libraryTracks.length === 0 ? (
+          <Text style={[styles.noResults, { color: theme.textSecondary }]}>
+            Aucun fichier audio trouvé. Ajoutez de la musique dans Music ou Download puis actualisez.
+          </Text>
+        ) : selectedCategory === "folders" ? (
+          <Text style={[styles.noResults, { color: theme.textSecondary }]}>
+            Les dossiers restent disponibles dans l’application Fichiers. La liste Chansons regroupe ici les fichiers audio accessibles.
+          </Text>
+        ) : (
+          <Text style={[styles.noResults, { color: theme.textSecondary }]}>
+            Aucun résultat{normalizedQuery ? ` pour « ${searchQuery.trim()} »` : ""}.
+          </Text>
+        )}
       />
     </ScreenContainer>
   );
@@ -256,6 +457,43 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 18,
+    fontWeight: "700",
+  },
+  permissionState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    paddingHorizontal: 24,
+  },
+  permissionDescription: {
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: "center",
+  },
+  permissionButton: {
+    borderRadius: 24,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    marginTop: 6,
+  },
+  permissionButtonText: {
+    fontWeight: "700",
+  },
+  error: {
+    textAlign: "center",
+  },
+  loadingState: {
+    alignItems: "center",
+    gap: 12,
+    padding: 28,
+  },
+  collectionRow: {
+    paddingVertical: 12,
+    gap: 4,
+  },
+  collectionTitle: {
+    fontSize: 15,
     fontWeight: "700",
   },
 });

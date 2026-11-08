@@ -19,7 +19,7 @@ export default function MiniPlayer() {
                 onPress={() => router.push("/now-playing")}
             >
                 <Image 
-                    source={{ uri: currentTrack.cover }}
+                    source={currentTrack.cover ? { uri: currentTrack.cover } : require("../../assets/images/explore.png")}
                     style={styles.cover}
                     contentFit="cover"
                 />
