@@ -1,8 +1,10 @@
 import { Track } from "@/constants/musicType"
 import { useTheme } from "@/hooks/use-theme"
-import { Pressable, StyleSheet, View, Text } from "react-native";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
+import { StyleSheet, View, Text } from "react-native";
 import { Image } from "expo-image";
 import { EllipsisVertical, Heart } from "lucide-react-native";
+import { usePlayer } from "@/hooks/usePlayer";
 
 interface Props {
     track: Track;
@@ -12,6 +14,8 @@ interface Props {
 
 export default function TrackItem({ track, onPress, onMore }: Props) {
     const theme = useTheme()
+    const { favoriteTrackIds } = usePlayer()
+    const isFavorite = favoriteTrackIds.includes(track.id)
 
     return (
         <Pressable 
@@ -33,7 +37,7 @@ export default function TrackItem({ track, onPress, onMore }: Props) {
                 <Text numberOfLines={1} style={[styles.subtitle, {color: theme.textSecondary}]}>{track.artist} • {track.album}</Text>
             </View>
 
-            {track.isFavorite ? (
+            {isFavorite ? (
                 <Heart size={14} color={theme.primary} fill={theme.primary} />
             ) : null}
 

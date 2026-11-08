@@ -1,5 +1,6 @@
 import { useTheme } from "@/hooks/use-theme";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
+import { StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Track } from "@/constants/musicType";
 import { usePlayer } from "@/hooks/usePlayer";

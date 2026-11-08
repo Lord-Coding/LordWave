@@ -2,9 +2,10 @@ import { getAlbumTracks, getArtistTracks, getFolderTracks, getPlaylistTracks, mo
 import type { CollectionType, Track } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme"
 import { usePlayer } from "@/hooks/usePlayer";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { router, useLocalSearchParams } from "expo-router"
 import { Image } from "expo-image"
-import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { ArrowLeft, Play, Shuffle } from "lucide-react-native";
 import TrackRow from "@/components/TrackRow";
 import ScreenContainer from "@/components/ScreenContainer";
@@ -126,17 +127,20 @@ export default function CollectionDetailScreen() {
             backgroundColor={theme.backgroundElement}
             includeBottomSafeArea
         >
+          <View style={styles.fixedHeader}>
+            <Pressable
+                onPress={() => router.back()}
+                style={[styles.backButton, {backgroundColor: theme.backgroundElement}]}
+                accessibilityRole="button"
+                accessibilityLabel="Retour"
+            >
+                <ArrowLeft size={23} color={theme.white} />
+            </Pressable>
+          </View>
           <ScrollView
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <Pressable
-                onPress={() => router.back()}
-                style={[styles.backButton, {backgroundColor: theme.backgroundElement}]}
-            >
-                <ArrowLeft size={23} color={theme.white} />
-            </Pressable>
-
             {cover ? (
                 <Image 
                     source={{ uri: cover }}
@@ -200,8 +204,11 @@ export default function CollectionDetailScreen() {
 
 const styles = StyleSheet.create({
     content: {
-        paddingTop: 20,
         paddingBottom: 45,
+    },
+    fixedHeader: {
+        height: 54,
+        justifyContent: "center",
     },
     empty: {
         flex: 1,
@@ -218,7 +225,6 @@ const styles = StyleSheet.create({
         borderRadius: 21,
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: 22,
     },
     cover: {
         width: 230,

@@ -1,19 +1,23 @@
 import ScreenContainer from "@/components/ScreenContainer";
 import SectionHeader from "@/components/SectionHeader";
 import TrackItem from "@/components/TrackItem";
-import { getFavoritesTracks } from "@/constants/mockMusic";
+import { mockTracks } from "@/constants/mockMusic";
 import { Track } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
 import { usePlayer } from "@/hooks/usePlayer";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { toast } from "burnt";
 import { Heart, Shuffle } from "lucide-react-native";
 import { useMemo } from "react";
-import { View, StyleSheet, Text, Pressable, FlatList } from "react-native";
+import { View, StyleSheet, Text, FlatList } from "react-native";
 
 export default function FavoritesScreen() {
   const theme = useTheme();
-  const { playTrack } = usePlayer();
-  const favoriteTracks = useMemo(() => getFavoritesTracks(), []);
+  const { playTrack, favoriteTrackIds } = usePlayer();
+  const favoriteTracks = useMemo(
+    () => mockTracks.filter((track) => favoriteTrackIds.includes(track.id)),
+    [favoriteTrackIds],
+  );
 
   const handleTrackPress = (track: Track) => {
     playTrack(track, favoriteTracks);

@@ -4,11 +4,12 @@ import ScreenContainer from "@/components/ScreenContainer";
 import { getPlaylistTracks, mockPlaylists } from "@/constants/mockMusic";
 import { Playlist } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { usePlayer } from "@/hooks/usePlayer";
 import { openCollection } from "@/navigation/openCollection";
 import { toast } from "burnt";
 import { Plus, ListMusic, Shuffle } from "lucide-react-native";
-import { View, Pressable, Text, StyleSheet, FlatList } from "react-native";
+import { View, Text, StyleSheet, FlatList } from "react-native";
 
 export default function PlaylistScreen() {
   const theme = useTheme();

@@ -1,5 +1,6 @@
 import { useTheme } from "@/hooks/use-theme";
-import { View, Text, TouchableOpacity } from "react-native";
+import { RipplePressable } from "@/components/RipplePressable";
+import { View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons"
 import { FontSize, Spacing } from "@/constants/theme";
 
@@ -54,7 +55,7 @@ export default function EmptyScreen({ icon, title, subtitle, action }: EmptyStat
             ) : null}
 
             {action ? (
-                <TouchableOpacity 
+                <RipplePressable
                     onPress={action.onPress}
                     style={{
                         backgroundColor: theme.primary,
@@ -69,9 +70,8 @@ export default function EmptyScreen({ icon, title, subtitle, action }: EmptyStat
                     <Text style={{ color: theme.white, fontWeight: "bold" }}>
                         {action.label}
                     </Text>
-                </TouchableOpacity>
+                </RipplePressable>
             ) : null}
         </View>
     )
 }
-

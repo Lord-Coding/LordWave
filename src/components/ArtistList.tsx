@@ -1,13 +1,19 @@
 import { mockArtists } from "@/constants/mockMusic";
 import { useTheme } from "@/hooks/use-theme";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { openCollection } from "@/navigation/openCollection";
 import { Image } from "expo-image";
 import { ChevronRight } from "lucide-react-native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import SectionHeader from "./SectionHeader";
 
-export default function ArtistList() {
+export default function ArtistList({ searchQuery = "" }: { searchQuery?: string }) {
   const theme = useTheme();
+  const artists = mockArtists.filter((artist) =>
+    [artist.name, artist.genre].some((value) =>
+      value.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase()),
+    ),
+  );
 
   return (
     <View style={styles.container}>
@@ -17,7 +23,7 @@ export default function ArtistList() {
         onActionPress={() => console.log("[LordWave] Trier les artistes")}
       />
 
-      {mockArtists.map((artist) => (
+      {artists.length ? artists.map((artist) => (
         <Pressable
           key={artist.id}
           style={styles.row}
@@ -43,7 +49,7 @@ export default function ArtistList() {
 
           <ChevronRight size={19} color={theme.inactive} />
         </Pressable>
-      ))}
+      )) : <Text style={{ color: theme.textSecondary }}>Aucun artiste trouvé.</Text>}
     </View>
   );
 }

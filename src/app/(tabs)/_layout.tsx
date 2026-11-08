@@ -1,11 +1,12 @@
 import MiniPlayer from "@/components/MiniPlayer";
 import { FontSize } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { BottomTabBar } from "expo-router/build/layouts/Tabs";
 import { Heart, ListVideo, type LucideIcon } from "lucide-react-native";
-import { Pressable, View, type ColorValue } from "react-native";
+import { View, type ColorValue } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TAB_HEIGHT = 60;
@@ -51,7 +52,6 @@ export default function TabsLayout() {
         tabBarButton: ({ ref: _ref, ...props }) => (
           <Pressable
             {...props}
-            android_ripple={{ color: "transparent", radius: 0 }}
           />
         ),
         tabBarLabelStyle: {

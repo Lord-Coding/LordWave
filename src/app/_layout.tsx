@@ -53,7 +53,9 @@ const RootNavigation = () => {
         <Stack.Screen 
           name="tails"
           options={{
-            headerShown: false
+            headerShown: false,
+            presentation: "modal",
+            animation: "slide_from_bottom",
           }}
         />
 

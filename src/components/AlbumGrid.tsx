@@ -1,13 +1,19 @@
 import { mockAlbums } from "@/constants/mockMusic";
 import { useTheme } from "@/hooks/use-theme";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { openCollection } from "@/navigation/openCollection";
 import { Image } from "expo-image";
 import { Play } from "lucide-react-native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import SectionHeader from "./SectionHeader";
 
-export default function AlbumGrid() {
+export default function AlbumGrid({ searchQuery = "" }: { searchQuery?: string }) {
   const theme = useTheme();
+  const albums = mockAlbums.filter((album) =>
+    [album.title, album.artist, String(album.year)].some((value) =>
+      value.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase()),
+    ),
+  );
 
   return (
     <View style={styles.container}>
@@ -18,7 +24,7 @@ export default function AlbumGrid() {
       />
 
       <View style={styles.grid}>
-        {mockAlbums.map((album) => (
+        {albums.map((album) => (
           <Pressable
             key={album.id}
             style={styles.card}
@@ -56,6 +62,9 @@ export default function AlbumGrid() {
           </Pressable>
         ))}
       </View>
+      {albums.length === 0 && (
+        <Text style={{ color: theme.textSecondary }}>Aucun album trouvé.</Text>
+      )}
     </View>
   );
 }

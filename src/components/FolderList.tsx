@@ -1,12 +1,18 @@
 import { mockFolders } from "@/constants/mockMusic";
 import { useTheme } from "@/hooks/use-theme";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { openCollection } from "@/navigation/openCollection";
 import { ChevronRight, Folder } from "lucide-react-native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import SectionHeader from "./SectionHeader";
 
-export default function FolderList() {
+export default function FolderList({ searchQuery = "" }: { searchQuery?: string }) {
   const theme = useTheme();
+  const folders = mockFolders.filter((folder) =>
+    [folder.name, folder.path].some((value) =>
+      value.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase()),
+    ),
+  );
 
   return (
     <View style={styles.container}>
@@ -16,7 +22,7 @@ export default function FolderList() {
         onActionPress={() => console.log("[LordWave] Parcourir le stockage")}
       />
 
-      {mockFolders.map((folder) => (
+      {folders.map((folder) => (
         <Pressable
           key={folder.id}
           style={styles.row}
@@ -49,6 +55,9 @@ export default function FolderList() {
           <ChevronRight size={29} color={theme.inactive} />
         </Pressable>
       ))}
+      {folders.length === 0 && (
+        <Text style={{ color: theme.textSecondary }}>Aucun dossier trouvé.</Text>
+      )}
     </View>
   );
 }

@@ -1,5 +1,6 @@
 import { useTheme } from "@/hooks/use-theme";
 import { usePlayer } from "@/hooks/usePlayer";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { router } from "expo-router";
 import {
   ArrowDown,
@@ -10,10 +11,12 @@ import {
   Shuffle,
   SkipBack,
   SkipForward,
+  ListMusic,
+  Volume2,
 } from "lucide-react-native";
 import { Image } from "expo-image";
 import Slider from "@react-native-community/slider";
-import { Pressable, Text, View, StyleSheet, useWindowDimensions } from "react-native";
+import { Text, View, StyleSheet, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 function durationToSeconds(duration: string) {
@@ -22,8 +25,9 @@ function durationToSeconds(duration: string) {
 }
 
 function formatTime(seconds: number) {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
+  const totalSeconds = Math.floor(Number.isFinite(seconds) ? Math.max(0, seconds) : 0);
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
@@ -38,8 +42,18 @@ export default function NowPlayingScreen() {
     currentTime,
     previousTrack,
     seekTo,
+    volume,
+    setVolume,
+    favoriteTrackIds,
+    toggleFavorite,
+    isShuffleEnabled,
+    isRepeatEnabled,
+    toggleShuffle,
+    toggleRepeat,
+    tail,
   } = usePlayer();
-  const artworkSize = Math.min(width - 44, height * 0.4, 380);
+  const artworkSize = Math.min(width - 44, height * 0.36, 380);
+  const isFavorite = favoriteTrackIds.includes(currentTrack?.id ?? "");
 
   if (!currentTrack) {
     return (
@@ -81,7 +95,14 @@ export default function NowPlayingScreen() {
           </Text>
         </View>
 
-        <View style={styles.headerActionPlaceholder} />
+        <Pressable
+          onPress={() => router.push("/tails")}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={`Ouvrir la file d'attente, ${tail.length} morceaux à suivre`}
+        >
+          <ListMusic size={23} color={theme.white} />
+        </Pressable>
       </View>
 
       <View style={styles.content}>
@@ -106,11 +127,17 @@ export default function NowPlayingScreen() {
           </View>
 
           <Pressable
+            onPress={() => toggleFavorite(currentTrack.id)}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel="Ajouter aux favoris"
+            accessibilityLabel={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+            accessibilityState={{ selected: isFavorite }}
           >
-            <Heart size={27} color={theme.primary} />
+            <Heart
+              size={27}
+              color={theme.primary}
+              fill={isFavorite ? theme.primary : "transparent"}
+            />
           </Pressable>
         </View>
 
@@ -136,8 +163,14 @@ export default function NowPlayingScreen() {
         </View>
 
         <View style={styles.controls}>
-          <Pressable hitSlop={10} accessibilityLabel="Lecture aléatoire">
-            <Shuffle color={theme.textSecondary} size={23} />
+          <Pressable
+            onPress={toggleShuffle}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Lecture aléatoire"
+            accessibilityState={{ selected: isShuffleEnabled }}
+          >
+            <Shuffle color={isShuffleEnabled ? theme.primary : theme.textSecondary} size={23} />
           </Pressable>
 
           <Pressable
@@ -171,9 +204,38 @@ export default function NowPlayingScreen() {
             <SkipForward size={23} color={theme.white} />
           </Pressable>
 
-          <Pressable hitSlop={10} accessibilityLabel="Répéter">
-            <Repeat color={theme.textSecondary} size={23} />
+          <Pressable
+            onPress={toggleRepeat}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Répéter"
+            accessibilityState={{ selected: isRepeatEnabled }}
+          >
+            <Repeat color={isRepeatEnabled ? theme.primary : theme.textSecondary} size={23} />
           </Pressable>
+        </View>
+
+        <View style={[styles.volumePanel, { backgroundColor: theme.backgroundSelected }]}>
+          <View style={styles.volumeHeader}>
+            <View style={styles.volumeTitle}>
+              <Volume2 size={17} color={theme.textSecondary} />
+              <Text style={[styles.volumeLabel, { color: theme.textSecondary }]}>VOLUME</Text>
+            </View>
+            <Text style={[styles.volumeValue, { color: theme.text }]}>
+              {Math.round(volume * 100)}%
+            </Text>
+          </View>
+          <Slider
+            style={styles.volumeSlider}
+            minimumValue={0}
+            maximumValue={1}
+            value={volume}
+            onValueChange={setVolume}
+            minimumTrackTintColor={theme.primary}
+            maximumTrackTintColor={theme.inactive}
+            thumbTintColor={theme.primary}
+            accessibilityLabel="Volume"
+          />
         </View>
       </View>
     </SafeAreaView>
@@ -208,9 +270,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 14,
     fontWeight: "600",
-  },
-  headerActionPlaceholder: {
-    width: 25,
   },
   content: {
     flex: 1,
@@ -253,6 +312,39 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  volumePanel: {
+    paddingHorizontal: 15,
+    paddingTop: 12,
+    paddingBottom: 4,
+    borderRadius: 16,
+    gap: 3,
+  },
+  volumeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  volumeTitle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  volumeLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+  },
+  volumeValue: {
+    textAlign: "right",
+    fontSize: 12,
+    fontWeight: "600",
+    fontVariant: ["tabular-nums"],
+  },
+  volumeSlider: {
+    width: "100%",
+    height: 32,
+    margin: 0,
   },
   playButton: {
     width: 68,

@@ -1,6 +1,7 @@
 import { Album } from "@/constants/musicType"
 import { useTheme } from "@/hooks/use-theme";
-import { Pressable, View, StyleSheet, Text } from "react-native";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
+import { View, StyleSheet, Text } from "react-native";
 import { Image } from "expo-image";
 import { Play } from "lucide-react-native";
 import { FontSize } from "@/constants/theme";

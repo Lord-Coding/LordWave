@@ -1,6 +1,7 @@
 import { FontSize } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
+import { View, Text, StyleSheet } from "react-native";
 
 interface Props {
     title: string;

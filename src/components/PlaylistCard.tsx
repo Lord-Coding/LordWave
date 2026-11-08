@@ -1,7 +1,8 @@
 import { getPlaylistTracks } from "@/constants/mockMusic";
 import { Playlist } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
-import { Pressable, StyleSheet, View, Text } from "react-native";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
+import { StyleSheet, View, Text } from "react-native";
 import { Image } from "expo-image";
 import { MoreVertical, Music2, Play } from "lucide-react-native";
 

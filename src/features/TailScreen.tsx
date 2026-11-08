@@ -3,8 +3,9 @@ import { useTheme } from "@/hooks/use-theme"
 import { usePlayer } from "@/hooks/usePlayer"
 import { router } from "expo-router"
 import { ArrowUp, ChevronDown, ListMusic, MoveDown, Trash2 } from "lucide-react-native"
-import { View, Pressable, Text, StyleSheet, ScrollView } from "react-native"
+import { View, Text, StyleSheet, ScrollView } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
+import { RipplePressable as Pressable } from "@/components/RipplePressable"
 
 export default function TailScreen() {
   const theme = useTheme()

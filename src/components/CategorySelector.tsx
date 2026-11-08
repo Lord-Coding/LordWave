@@ -1,8 +1,8 @@
 import { MusicCategory } from "@/constants/musicType";
 import { FontSize } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
-import { ThemeContext } from "expo-router/build/react-navigation/index.js";
-import { Pressable, ScrollView, Text, StyleSheet } from "react-native";
+import { RipplePressable as Pressable } from "@/components/RipplePressable";
+import { ScrollView, Text, StyleSheet } from "react-native";
 
 interface Props {
     selected: MusicCategory;
