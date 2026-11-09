@@ -5,7 +5,8 @@ import { MusicCategory, Track } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
 import { usePlayer } from "@/hooks/usePlayer";
 import { RipplePressable as Pressable } from "@/components/RipplePressable";
-import { getDeviceMusic } from "@/services/deviceMusic";
+import { enrichDeviceMusic, getDeviceMusic } from "@/services/deviceMusic";
+import { Image } from "expo-image";
 import {
   getPermissionsAsync,
   requestPermissionsAsync,
@@ -30,7 +31,10 @@ import {
 
 type LibraryGroup = {
   type: "artist" | "album";
+  id: string;
   name: string;
+  subtitle: string;
+  cover: string;
   tracks: Track[];
 };
 
@@ -45,7 +49,8 @@ export default function LibraryScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const scanInProgress = useRef(false);
+  const scanPromiseRef = useRef<Promise<void> | null>(null);
+  const enrichmentGenerationRef = useRef(0);
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
   const filteredTracks = useMemo(
     () =>
@@ -57,27 +62,57 @@ export default function LibraryScreen() {
     [libraryTracks, normalizedQuery],
   );
 
-  const refreshLibrary = useCallback(async () => {
-    if (Platform.OS !== "android" || scanInProgress.current) return;
+  const refreshLibrary = useCallback(async (afterCurrentScan = false): Promise<void> => {
+    if (Platform.OS !== "android") return;
+    if (scanPromiseRef.current) {
+      await scanPromiseRef.current;
+      if (afterCurrentScan) await refreshLibrary();
+      return;
+    }
 
-    scanInProgress.current = true;
-    setIsLoading(true);
-    setLoadError(null);
-    try {
-      const currentPermission = await getPermissionsAsync(false, ["audio"]);
-      setPermission(currentPermission);
-      if (!currentPermission.granted) {
+    const scan = (async () => {
+      setIsLoading(true);
+      setLoadError(null);
+      const generation = ++enrichmentGenerationRef.current;
+      try {
+        const currentPermission = await getPermissionsAsync(false, ["audio"]);
+        setPermission(currentPermission);
+        if (!currentPermission.granted) {
+          setLibraryTracks([]);
+          return;
+        }
+
         setLibraryTracks([]);
-        return;
+        const tracks = await getDeviceMusic((pageTracks) => {
+          if (generation === enrichmentGenerationRef.current) {
+            setLibraryTracks((currentTracks) => [...currentTracks, ...pageTracks]);
+          }
+        });
+        if (generation !== enrichmentGenerationRef.current) return;
+        setLibraryTracks(tracks);
+        void enrichDeviceMusic(tracks, (updatedTrack) => {
+          if (generation !== enrichmentGenerationRef.current) return;
+          setLibraryTracks((currentTracks) =>
+            currentTracks.map((track) =>
+              track.id === updatedTrack.id ? updatedTrack : track,
+            ),
+          );
+        }).catch((error: unknown) => {
+          console.error("Impossible d’enrichir les métadonnées de la bibliothèque.", error);
+        });
+      } catch (error) {
+        console.error("Impossible de charger la bibliothèque audio locale.", error);
+        setLoadError("La bibliothèque musicale n’a pas pu être chargée. Réessayez.");
+      } finally {
+        setIsLoading(false);
       }
+    })();
 
-      setLibraryTracks(await getDeviceMusic());
-    } catch (error) {
-      console.error("Impossible de charger la bibliothèque audio locale.", error);
-      setLoadError("La bibliothèque musicale n’a pas pu être chargée. Réessayez.");
+    scanPromiseRef.current = scan;
+    try {
+      await scan;
     } finally {
-      scanInProgress.current = false;
-      setIsLoading(false);
+      if (scanPromiseRef.current === scan) scanPromiseRef.current = null;
     }
   }, [setLibraryTracks]);
 
@@ -90,6 +125,7 @@ export default function LibraryScreen() {
       if (state === "active") void refreshLibrary();
     });
     return () => {
+      enrichmentGenerationRef.current++;
       subscription.remove();
       appStateSubscription.remove();
     };
@@ -103,7 +139,7 @@ export default function LibraryScreen() {
       const response = await requestPermissionsAsync(false, ["audio"]);
       setPermission(response);
       if (response.granted) {
-        await refreshLibrary();
+        await refreshLibrary(true);
       }
     } catch (error) {
       console.error("Impossible de demander l’accès à la musique.", error);
@@ -121,34 +157,47 @@ export default function LibraryScreen() {
 
   const handleTrackPress = useCallback((track: Track) => playTrack(track, libraryTracks), [libraryTracks, playTrack]);
 
-  const artists = useMemo(() => {
-    const query = normalizedQuery;
-    return Array.from(new Set(libraryTracks.map((track) => track.artist)))
-      .filter((artist) => artist.toLocaleLowerCase().includes(query))
-      .map((artist) => ({
-        artist,
-        tracks: libraryTracks.filter((track) => track.artist === artist),
-      }));
+  const artists = useMemo<LibraryGroup[]>(() => {
+    const groups = new Map<string, Track[]>();
+    for (const track of libraryTracks) {
+      const tracks = groups.get(track.artist) ?? [];
+      tracks.push(track);
+      groups.set(track.artist, tracks);
+    }
+    return Array.from(groups, ([name, tracks]): LibraryGroup => ({
+      type: "artist",
+      id: `artist:${name}`,
+      name,
+      subtitle: `${tracks.length} morceau${tracks.length === 1 ? "" : "x"}`,
+      cover: tracks.find((track) => track.cover)?.cover ?? "",
+      tracks,
+    })).filter((group) => group.name.toLocaleLowerCase().includes(normalizedQuery));
   }, [libraryTracks, normalizedQuery]);
 
-  const albums = useMemo(() => {
-    const query = normalizedQuery;
-    return Array.from(new Set(libraryTracks.map((track) => track.album)))
-      .filter((album) => album.toLocaleLowerCase().includes(query))
-      .map((album) => ({
-        album,
-        tracks: libraryTracks.filter((track) => track.album === album),
-      }));
+  const albums = useMemo<LibraryGroup[]>(() => {
+    const groups = new Map<string, Track[]>();
+    for (const track of libraryTracks) {
+      const key = `${track.album}\u0000${track.artist}`;
+      const tracks = groups.get(key) ?? [];
+      tracks.push(track);
+      groups.set(key, tracks);
+    }
+    return Array.from(groups, ([id, tracks]): LibraryGroup => ({
+      type: "album",
+      id: `album:${id}`,
+      name: tracks[0].album,
+      subtitle: tracks[0].artist,
+      cover: tracks.find((track) => track.cover)?.cover ?? "",
+      tracks,
+    })).filter((group) =>
+      `${group.name} ${group.subtitle}`.toLocaleLowerCase().includes(normalizedQuery),
+    );
   }, [libraryTracks, normalizedQuery]);
 
   const listData = useMemo<(Track | LibraryGroup)[]>(() => {
     if (selectedCategory === "songs") return filteredTracks;
-    if (selectedCategory === "artists") {
-      return artists.map(({ artist, tracks }) => ({ type: "artist", name: artist, tracks }));
-    }
-    if (selectedCategory === "albums") {
-      return albums.map(({ album, tracks }) => ({ type: "album", name: album, tracks }));
-    }
+    if (selectedCategory === "artists") return artists;
+    if (selectedCategory === "albums") return albums;
     return [];
   }, [albums, artists, filteredTracks, selectedCategory]);
 
@@ -197,12 +246,17 @@ export default function LibraryScreen() {
               </View>
           </View>
         )}
+        {selectedCategory === "albums" && libraryTracks.length > 0 ? (
+          <Text style={[styles.heading, styles.albumHeading, { color: theme.text }]}>
+            {albums.length} album{albums.length === 1 ? "" : "s"}
+          </Text>
+        ) : null}
         {loadError ? (
           <Text style={[styles.error, { color: theme.danger }]}>{loadError}</Text>
         ) : null}
       </View>
     ),
-    [selectedCategory, normalizedQuery, libraryTracks, theme, handleCategoryChange, handleShuffle, refreshLibrary],
+    [selectedCategory, normalizedQuery, libraryTracks, albums.length, theme, handleCategoryChange, handleShuffle, refreshLibrary],
   );
 
   const renderTrack = useCallback(
@@ -213,10 +267,20 @@ export default function LibraryScreen() {
             style={styles.collectionRow}
             onPress={() => playTrack(item.tracks[0], item.tracks)}
           >
-            <Text style={[styles.collectionTitle, { color: theme.text }]}>{item.name}</Text>
-            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-              {item.tracks.length} morceau{item.tracks.length === 1 ? "" : "x"}
-            </Text>
+            <Image
+              source={item.cover ? { uri: item.cover } : require("../../assets/images/explore.png")}
+              style={[styles.collectionCover, { backgroundColor: theme.backgroundElement }]}
+              contentFit="cover"
+              transition={150}
+            />
+            <View style={styles.collectionDetails}>
+              <Text numberOfLines={1} style={[styles.collectionTitle, { color: theme.text }]}>
+                {item.name}
+              </Text>
+              <Text numberOfLines={1} style={[styles.subtitle, { color: theme.textSecondary }]}>
+                {item.subtitle} · {item.tracks.length} morceau{item.tracks.length === 1 ? "" : "x"}
+              </Text>
+            </View>
           </Pressable>
         );
       }
@@ -356,7 +420,7 @@ export default function LibraryScreen() {
         style={styles.list}
         contentContainerStyle={styles.content}
         data={listData}
-        keyExtractor={(item) => "tracks" in item ? `${item.type}:${item.name}` : item.id}
+        keyExtractor={(item) => item.id}
         renderItem={renderTrack}
         ListHeaderComponent={renderHeader}
         showsVerticalScrollIndicator={false}
@@ -489,11 +553,28 @@ const styles = StyleSheet.create({
     padding: 28,
   },
   collectionRow: {
-    paddingVertical: 12,
-    gap: 4,
+    minHeight: 76,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 8,
+  },
+  collectionCover: {
+    width: 56,
+    height: 56,
+    borderRadius: 9,
+  },
+  collectionDetails: {
+    flex: 1,
+    gap: 5,
+    minWidth: 0,
   },
   collectionTitle: {
     fontSize: 15,
     fontWeight: "700",
+  },
+  albumHeading: {
+    marginTop: 22,
+    marginBottom: 8,
   },
 });

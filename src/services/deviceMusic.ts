@@ -1,9 +1,10 @@
-import { AssetField, MediaType, Query } from "expo-media-library";
+import { Asset, AssetField, MediaType, Query } from "expo-media-library";
 import type { Track } from "@/constants/musicType";
-import { readAudioMetadata } from "@/services/audioMetadata";
+import { cacheEmbeddedArtwork, readAudioMetadata } from "@/services/audioMetadata";
 
-const PAGE_SIZE = 100;
-const METADATA_WORKERS = 4;
+const PAGE_SIZE = 200;
+const URI_WORKERS = 12;
+const METADATA_WORKERS = 3;
 const SUPPORTED_EXTENSIONS = new Set([
   "aac",
   "amr",
@@ -72,7 +73,9 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-export async function getDeviceMusic(): Promise<Track[]> {
+export async function getDeviceMusic(
+  onPage?: (tracks: Track[]) => void,
+): Promise<Track[]> {
   const tracks: Track[] = [];
   const seenIds = new Set<string>();
 
@@ -82,62 +85,90 @@ export async function getDeviceMusic(): Promise<Track[]> {
       .orderBy(AssetField.CREATION_TIME)
       .limit(PAGE_SIZE)
       .offset(offset)
-      .exe();
+      .exeForMetadata();
 
     if (assets.length === 0) break;
 
     const pageTracks = await mapWithConcurrency(
       assets,
-      METADATA_WORKERS,
+      URI_WORKERS,
       async (asset): Promise<Track | null> => {
         try {
-          const info = await asset.getInfo();
-          const extension = info.filename.split(".").pop()?.toLowerCase();
+          const filename = asset.filename ?? "";
+          const extension = filename.split(".").pop()?.toLowerCase();
 
           if (
-            info.mediaType !== MediaType.AUDIO ||
+            asset.mediaType !== MediaType.AUDIO ||
             !extension ||
             !SUPPORTED_EXTENSIONS.has(extension) ||
-            seenIds.has(info.id)
+            seenIds.has(asset.id)
           ) {
             return null;
           }
 
-          const uri = info.uri || (await asset.getUri());
+          const uri = await new Asset(asset.id).getUri();
           if (!uri) return null;
-          const fallback = titleFromFilename(info.filename);
-          let metadata = null;
-          try {
-            metadata = await readAudioMetadata(uri);
-          } catch (error) {
-            console.warn(`Impossible de lire les métadonnées audio ${info.filename}.`, error);
-          }
-
-          seenIds.add(info.id);
-          const durationSeconds =
-            metadata?.duration && metadata.duration > 0
-              ? metadata.duration / 1000
-              : info.duration ?? 0;
+          const fallback = titleFromFilename(filename);
+          seenIds.add(asset.id);
+          const durationSeconds = asset.duration ?? 0;
           return {
-            id: info.id,
-            title: nonEmpty(metadata?.title, fallback.title),
-            artist: nonEmpty(metadata?.artist, fallback.artist),
-            album: nonEmpty(metadata?.album, fallback.album),
+            id: asset.id,
+            title: fallback.title,
+            artist: fallback.artist,
+            album: fallback.album,
             cover: "",
             duration: formatDuration(durationSeconds),
             durationSeconds,
             uri,
           };
         } catch (error) {
-          console.warn(`Impossible de lire le fichier audio ${asset.id}.`, error);
+          console.warn(`Impossible de récupérer le fichier audio ${asset.id}.`, error);
           return null;
         }
       },
     );
 
-    tracks.push(...pageTracks.filter((track): track is Track => track !== null));
+    const validPageTracks = pageTracks.filter(
+      (track): track is Track => track !== null,
+    );
+    tracks.push(...validPageTracks);
+    onPage?.(validPageTracks);
     if (assets.length < PAGE_SIZE) break;
   }
 
   return tracks;
+}
+
+export async function enrichDeviceMusic(
+  tracks: Track[],
+  onTrackUpdated: (track: Track) => void,
+): Promise<void> {
+  await mapWithConcurrency(tracks, METADATA_WORKERS, async (track) => {
+    if (!track.uri) return;
+
+    const [metadata, cover] = await Promise.all([
+      readAudioMetadata(track.uri).catch((error: unknown) => {
+        console.warn(`Impossible de lire les métadonnées audio ${track.title}.`, error);
+        return null;
+      }),
+      cacheEmbeddedArtwork(track.id, track.uri).catch((error: unknown) => {
+        console.warn(`Impossible de récupérer la pochette de « ${track.title} ».`, error);
+        return null;
+      }),
+    ]);
+
+    onTrackUpdated({
+      ...track,
+      title: nonEmpty(metadata?.title, track.title),
+      artist: nonEmpty(metadata?.artist, track.artist),
+      album: nonEmpty(metadata?.album, track.album),
+      ...(cover ? { cover } : {}),
+      ...(metadata?.duration && metadata.duration > 0
+        ? {
+            durationSeconds: metadata.duration / 1000,
+            duration: formatDuration(metadata.duration / 1000),
+          }
+        : {}),
+    });
+  });
 }

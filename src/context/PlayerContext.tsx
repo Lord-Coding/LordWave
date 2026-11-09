@@ -7,7 +7,16 @@ import {
   type AudioPlaylistStatus,
 } from "expo-audio";
 import { File } from "expo-file-system";
-import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { Platform } from "react-native";
 import { cacheEmbeddedArtwork } from "@/services/audioMetadata";
 
@@ -23,7 +32,7 @@ type PlayerContextType = {
   isShuffleEnabled: boolean;
   isRepeatEnabled: boolean;
   playbackError: string | null;
-  setLibraryTracks: (tracks: Track[]) => void;
+  setLibraryTracks: Dispatch<SetStateAction<Track[]>>;
   playTrack: (track: Track, tracks?: Track[]) => void;
   togglePlayback: () => void;
   toggleFavorite: (trackId: string) => void;
@@ -268,7 +277,7 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
       playlistTracksRef.current = queue;
       currentIndexRef.current = 0;
       queue.forEach((item) => {
-        if (item.uri) player.add(item.uri);
+        if (item.uri) player.add({ uri: item.uri });
       });
       player.skipTo(0);
       player.play();
@@ -324,7 +333,7 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
       player.remove(queueIndex);
     }
     nextTail.forEach((track, tailIndex) => {
-      if (track.uri) player.insert(track.uri, index + 1 + tailIndex);
+      if (track.uri) player.insert({ uri: track.uri }, index + 1 + tailIndex);
     });
 
     const nextQueue = [...prefix, ...nextTail.filter((track) => track.uri)];
@@ -411,7 +420,7 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
     queue.splice(toIndex, 0, moved);
     if (moved.uri) {
       player.remove(fromIndex);
-      player.insert(moved.uri, toIndex);
+      player.insert({ uri: moved.uri }, toIndex);
     }
     playlistTracksRef.current = queue;
     setTail(queue.slice(index + 1));
@@ -435,7 +444,7 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
       setPlaybackError("Ce morceau ne peut pas être ajouté à la file de lecture.");
       return;
     }
-    player.add(track.uri);
+    player.add({ uri: track.uri });
     playlistTracksRef.current = [...playlistTracksRef.current, track];
     setTail((current) => [...current, track]);
   }, [player]);
