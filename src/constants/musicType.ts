@@ -7,7 +7,7 @@ export interface Album {
     artist: string;
     cover: string;
     trackCount: number;
-    year: number;
+    year?: number;
 }
 
 export type MusicCollection = {

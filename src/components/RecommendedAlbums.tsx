@@ -1,18 +1,39 @@
-import { getAlbumTracks, mockAlbums } from "@/constants/mockMusic";
+import type { Album, Track } from "@/constants/musicType";
 import { usePlayer } from "@/hooks/usePlayer";
 import { openCollection } from "@/navigation/openCollection";
+import { albumCollectionId } from "@/services/collectionIds";
 import { ScrollView, StyleSheet, View } from "react-native";
+import { useMemo } from "react";
 import AlbumCard from "./AlbumCard";
 import SectionHeader from "./SectionHeader";
 
 export default function RecommendedAlbums() {
-  const { playTrack } = usePlayer();
-  const openAlbum = (album: (typeof mockAlbums)[number]) => {
+  const { libraryTracks, playTrack } = usePlayer();
+  const albums = useMemo(() => {
+    const groups = new Map<string, Track[]>();
+    for (const track of libraryTracks) {
+      const key = `${track.album}\u0000${track.artist}`;
+      const group = groups.get(key) ?? [];
+      group.push(track);
+      groups.set(key, group);
+    }
+    return Array.from(groups.values(), (tracks): { album: Album; tracks: Track[] } => ({
+      album: {
+        id: albumCollectionId(tracks[0].album, tracks[0].artist),
+        title: tracks[0].album,
+        artist: tracks[0].artist,
+        cover: tracks.find((track) => track.cover)?.cover ?? "",
+        trackCount: tracks.length,
+      },
+      tracks,
+    })).slice(0, 10);
+  }, [libraryTracks]);
+  const openAlbum = (album: Album) => {
     openCollection("album", album.id);
   };
 
-  const playAlbum = (album: (typeof mockAlbums)[number]) => {
-    const tracks = getAlbumTracks(album.title);
+  const playAlbum = (album: Album) => {
+    const tracks = albums.find((item) => item.album.id === album.id)?.tracks ?? [];
     if (tracks.length > 0) {
       playTrack(tracks[0], tracks);
     }
@@ -22,8 +43,6 @@ export default function RecommendedAlbums() {
     <View style={styles.container}>
       <SectionHeader
         title="Albums recommandés"
-        actionLabel="Voir tout"
-        onActionPress={() => console.log("[LordWave] Voir tous les albums")}
       />
 
       <ScrollView
@@ -31,7 +50,7 @@ export default function RecommendedAlbums() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.list}
       >
-        {mockAlbums.map((album) => (
+        {albums.map(({ album }) => (
           <AlbumCard
             key={album.id}
             album={album}

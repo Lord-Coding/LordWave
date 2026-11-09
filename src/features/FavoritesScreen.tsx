@@ -5,17 +5,31 @@ import { Track } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
 import { usePlayer } from "@/hooks/usePlayer";
 import { RipplePressable as Pressable } from "@/components/RipplePressable";
-import { toast } from "burnt";
 import { Heart, Shuffle } from "lucide-react-native";
-import { useMemo } from "react";
-import { View, StyleSheet, Text, FlatList } from "react-native";
+import { useMemo, useState } from "react";
+import { ActivityIndicator, View, StyleSheet, Text, FlatList } from "react-native";
 
 export default function FavoritesScreen() {
   const theme = useTheme();
-  const { playTrack, favoriteTrackIds, libraryTracks } = usePlayer();
+  const {
+    playTrack,
+    favoriteTrackIds,
+    libraryTracks,
+    toggleFavorite,
+    isStorageReady,
+    storageError,
+  } = usePlayer();
+  const [sortByArtist, setSortByArtist] = useState(false);
   const favoriteTracks = useMemo(
-    () => libraryTracks.filter((track) => favoriteTrackIds.includes(track.id)),
-    [favoriteTrackIds, libraryTracks],
+    () =>
+      libraryTracks
+        .filter((track) => favoriteTrackIds.includes(track.id))
+        .sort((left, right) =>
+          (sortByArtist ? left.artist : left.title).localeCompare(
+            sortByArtist ? right.artist : right.title,
+          ),
+        ),
+    [favoriteTrackIds, libraryTracks, sortByArtist],
   );
 
   const handleTrackPress = (track: Track) => {
@@ -23,7 +37,7 @@ export default function FavoritesScreen() {
   }
 
   const handleTrackMore = (track: Track) => {
-    toast({ title: "Options du favori", message: track.title});
+    toggleFavorite(track.id);
   }
 
   const handleShuffle = () => {
@@ -77,10 +91,13 @@ export default function FavoritesScreen() {
       <View style={styles.sectionHeader}>
         <SectionHeader
           title="Tous vos favoris"
-          actionLabel="Trier"
-          onActionPress={() => console.log("[LordWave] Trier les favoris")}
+          actionLabel={sortByArtist ? "Artiste" : "Titre"}
+          onActionPress={() => setSortByArtist((current) => !current)}
         />
       </View>
+      {storageError ? (
+        <Text style={[styles.storageError, { color: theme.danger }]}>{storageError}</Text>
+      ) : null}
     </View>
   )
 
@@ -112,7 +129,18 @@ export default function FavoritesScreen() {
           />
         )}
         ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmpty}
+        ListEmptyComponent={isStorageReady ? renderEmpty : (
+          <View style={styles.loading}>
+            {storageError ? (
+              <Text style={[styles.storageError, { color: theme.danger }]}>{storageError}</Text>
+            ) : (
+              <>
+                <ActivityIndicator color={theme.primary} />
+                <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Chargement des favoris…</Text>
+              </>
+            )}
+          </View>
+        )}
         showsVerticalScrollIndicator={false}
       />
     </ScreenContainer>
@@ -181,12 +209,20 @@ const styles = StyleSheet.create({
   },
   shuffleText: { fontSize: 12, fontWeight: "700" },
   sectionHeader: { marginBottom: 4 },
+  storageError: { marginBottom: 12, fontSize: 12 },
   empty: {
     flex: 1,
     minHeight: 260,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 25,
+  },
+  loading: {
+    flex: 1,
+    minHeight: 220,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
   },
   emptyIcon: {
     width: 70,

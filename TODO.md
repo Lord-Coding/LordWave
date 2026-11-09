@@ -36,7 +36,7 @@ Pas de compte, backend, synchronisation cloud ni partage pour la V1. Privilégie
 - [ ] Tester avec une grande bibliothèque ; prévoir l’actualisation, la détection des ajouts et suppressions et éviter les rescans complets inutiles.
 - [x] Extraire et mettre en cache la pochette intégrée quand elle existe ; conserver le visuel local de remplacement sans réseau lorsqu’elle manque.
 
-**Travail réalisé :** l’écran Bibliothèque demande l’autorisation audio Android à la première utilisation, explique son usage, propose les réglages après un refus définitif et actualise la permission au retour dans l’application. Les assets audio sont lus par pages de 100, filtrés par extension et dédupliqués par identifiant ; chaque résultat garde son URI locale pour la lecture hors ligne. `react-native-audio-metadata` lit les tags titre, artiste, album et durée sur Android et iOS, avec les formats `artiste - titre` et `artiste - album - titre` ainsi que des valeurs de remplacement si un tag manque ou ne peut pas être lu. Les dossiers d’origine ne sont pas exposés par MediaLibrary et restent à traiter séparément. Une pochette de remplacement fournie dans l’application est affichée sans réseau. L’accès et les formats restent à valider sur téléphone.
+**Travail réalisé :** l’écran Bibliothèque demande l’autorisation audio Android à la première utilisation, explique son usage, propose les réglages après un refus définitif et actualise la permission au retour dans l’application. Les assets sont récupérés par pages de 200 via les métadonnées légères de MediaLibrary, filtrés par extension et dédupliqués par identifiant ; les résultats apparaissent sans attendre l’extraction des tags et pochettes. `react-native-audio-metadata` enrichit ensuite titre, artiste, album, durée et pochette intégrée en arrière-plan, avec des valeurs de remplacement si nécessaire. Les URI `file://` permettent aussi de grouper les fichiers par dossier ; les URI `content://` sans chemin exploitable restent dans les autres catégories. Les données et pochettes disponibles sont utilisables hors ligne. L’accès et les formats restent à valider sur téléphone.
 
 **Validation :** les vrais morceaux accessibles sur le téléphone apparaissent sans connexion Internet, y compris avec métadonnées incomplètes, refus de permission ou bibliothèque vide.
 
@@ -69,26 +69,30 @@ Pas de compte, backend, synchronisation cloud ni partage pour la V1. Privilégie
 
 ### 5. Persister bibliothèque et données utilisateur avec SQLite
 
-- [ ] Définir les tables, relations, migrations et transactions nécessaires pour morceaux indexés, favoris, playlists et morceaux d’une playlist.
-- [ ] Prévoir la gestion des erreurs et des données corrompues ou indisponibles.
-- [ ] Persister les favoris, synchroniser leur état dans les différentes vues et gérer les morceaux supprimés du téléphone.
-- [ ] Permettre de créer, modifier et supprimer une playlist, avec confirmation si nécessaire.
-- [ ] Ajouter et retirer des morceaux, gérer leur ordre et les éventuels doublons.
-- [ ] Calculer le nombre de morceaux et la durée réelle ; gérer les URI qui ne sont plus valides.
-- [ ] Enregistrer éventuellement le dernier morceau, la position et l’historique d’écoute si retenus pour la V1.
+- [x] Définir les tables, relations, migrations et transactions nécessaires pour morceaux indexés, favoris, playlists et morceaux d’une playlist.
+- [x] Prévoir la gestion des erreurs et des données corrompues ou indisponibles.
+- [x] Persister les favoris, synchroniser leur état dans les différentes vues et gérer les morceaux supprimés du téléphone.
+- [x] Permettre de créer, modifier et supprimer une playlist, avec confirmation si nécessaire.
+- [x] Ajouter et retirer des morceaux, gérer leur ordre et les éventuels doublons.
+- [x] Calculer le nombre de morceaux et la durée réelle ; gérer les URI qui ne sont plus valides.
+- [x] Ne pas persister le dernier morceau, la position ou l’historique d’écoute pour la V1.
 
-**Validation :** favoris et playlists sont conservés après fermeture et réouverture de l’application.
+**Travail réalisé :** `localDatabase.ts` initialise une base `lordwave.db` versionnée, vérifie son intégrité, conserve les morceaux indexés, favoris, playlists et relations ordonnées et exécute les remplacements en transactions. Les suppressions de morceaux retirent aussi leurs références aux favoris et playlists ; les doublons de playlists sont refusés par identifiant. Les erreurs SQLite sont journalisées et présentées dans les écrans sans réinitialiser automatiquement les données. Les compteurs, durées et pochettes des playlists sont calculés depuis leurs morceaux encore présents.
+
+**Validation :** le chargement, les transactions et les parcours sont implémentés. La conservation après fermeture/redémarrage et la reprise après base corrompue restent à valider sur un appareil Android.
 
 ### 6. Connecter et terminer les écrans
 
-- [ ] Remplacer progressivement les données de démonstration de `mockMusic.ts` par les données locales.
-- [ ] Terminer Accueil et Bibliothèque : chansons, artistes, albums, dossiers, recherche, tri et états de chargement/erreur/vide.
-- [ ] Connecter Favoris à SQLite ; afficher le vrai nombre, lire ou mélanger les favoris, trier et retirer un favori depuis cet écran.
-- [ ] Connecter Playlists à SQLite ; finaliser création, tri, menu d’actions, état vide et page de détail (description, pochette, morceaux, lecture et mélange).
-- [ ] Créer l’écran « En lecture » et le mini-lecteur ; synchroniser contrôles, progression, favoris, file d’attente et notification.
-- [ ] Finaliser la recherche par titre, artiste et album, les catégories de résultats et les détails artiste/album nécessaires.
-- [ ] Ajouter les paramètres utiles : actualisation de la bibliothèque, permissions, préférences de lecture, thème et informations « À propos » si retenus.
-- [ ] Remplacer les toasts et `console.log` provisoires par les actions réelles, confirmations utiles et erreurs compréhensibles.
+- [x] Remplacer les données de démonstration de `mockMusic.ts` par les données locales et supprimer le module de données fictives.
+- [x] Terminer la Bibliothèque : chansons, artistes, albums, dossiers accessibles via URI locales, recherche, tri, chargement, erreur et états vides. L’onglet Bibliothèque constitue le catalogue principal ; aucune page Accueil distincte n’est retenue pour la V1.
+- [x] Connecter Favoris à SQLite ; afficher le vrai nombre, lire ou mélanger les favoris, trier et retirer un favori depuis les vues concernées.
+- [x] Connecter Playlists à SQLite ; finaliser création, modification, suppression confirmée, tri, actions, état vide et page de détail (description, pochette issue des morceaux, morceaux, ordre, ajout, retrait, lecture et mélange).
+- [x] Connecter l’écran « En lecture » et le mini-lecteur aux contrôles, à la progression, aux favoris, à la file d’attente et à la notification.
+- [x] Finaliser la recherche par titre, artiste et album, les catégories et les détails artiste/album nécessaires.
+- [x] Ne pas retenir de page Paramètres séparée pour la V1 ; l’actualisation et les permissions sont accessibles depuis Bibliothèque, les préférences de lecture depuis le lecteur et le thème suit le système.
+- [x] Remplacer les toasts et `console.log` provisoires des parcours bibliothèque, favoris et playlists par des actions, confirmations et erreurs compréhensibles.
+
+**Validation :** les parcours sont reliés aux données locales et les états de chargement, erreur et vide sont implémentés. Leur validation tactile complète reste à effectuer sur Android.
 
 ### 7. Tester, optimiser et préparer la distribution
 
@@ -102,9 +106,9 @@ Pas de compte, backend, synchronisation cloud ni partage pour la V1. Privilégie
 - [ ] Valider le profil `production` (AAB), la signature, le keystore, les icônes, captures d’écran, description et politique de confidentialité avant publication éventuelle.
 - [ ] Retirer les logs inutiles, lancer lint, vérification TypeScript, Expo Doctor et build final.
 
-## Par quelle priorité commencer ?
+## Prochaine priorité
 
-Après une courte vérification de configuration et la confirmation de l’identifiant Android, commence par **l’étape 2 : l’accès réel à la bibliothèque audio**. C’est le socle des écrans Accueil, Favoris et Playlists. Valide les permissions, la récupération des morceaux et les métadonnées sur un vrai téléphone avant d’investir dans SQLite ou la finition visuelle.
+Les étapes 5 et 6 sont implémentées. Priorité suivante : valider sur un appareil Android la persistance après redémarrage, la lecture et les parcours de bibliothèque/favoris/playlists ; puis poursuivre les tests de performance et de distribution de l’étape 7.
 
 ## Contraintes de développement et de validation
 
@@ -112,7 +116,7 @@ Après une courte vérification de configuration et la confirmation de l’ident
 - Le profil `development` sert au Development Client avec Metro ; le profil `preview` doit produire un APK autonome testable sans serveur de développement.
 - La configuration seule ne prouve pas que la lecture en arrière-plan fonctionne : valider sur un véritable appareil Android.
 - `expo-image` affiche les pochettes mais ne suffit pas à extraire celles intégrées aux fichiers audio.
-- Remplacer progressivement les exemples de `mockMusic.ts` après validation des sources réelles et de leur modèle de données.
+- Les données fictives de `mockMusic.ts` ne sont plus utilisées ; la bibliothèque et les données utilisateur s’appuient sur les sources locales et SQLite.
 
 ## Critères d’acceptation V1
 

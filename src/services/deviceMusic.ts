@@ -53,6 +53,18 @@ function nonEmpty(value: string | undefined, fallback: string) {
   return value?.trim() || fallback;
 }
 
+export function getTrackFolder(track: Track): string | null {
+  if (!track.uri?.startsWith("file://")) return null;
+  try {
+    const path = decodeURIComponent(track.uri.slice("file://".length));
+    const separator = path.lastIndexOf("/");
+    return separator > 0 ? path.slice(0, separator) : null;
+  } catch (error) {
+    console.warn(`Impossible de déterminer le dossier de « ${track.title} ».`, error);
+    return null;
+  }
+}
+
 async function mapWithConcurrency<T, R>(
   items: T[],
   concurrency: number,

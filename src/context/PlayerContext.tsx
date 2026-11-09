@@ -1,4 +1,4 @@
-import { Track } from "@/constants/musicType";
+import { Playlist, Track } from "@/constants/musicType";
 import {
   requestNotificationPermissionsAsync,
   setAudioModeAsync,
@@ -19,6 +19,17 @@ import {
 } from "react";
 import { Platform } from "react-native";
 import { cacheEmbeddedArtwork } from "@/services/audioMetadata";
+import {
+  createPlaylist as createStoredPlaylist,
+  deletePlaylist as deleteStoredPlaylist,
+  initializeLocalDatabase,
+  loadLocalMusic,
+  saveLibraryTracks,
+  saveTrack,
+  setPlaylistTrackOrder,
+  setTrackFavorite,
+  updatePlaylist as updateStoredPlaylist,
+} from "@/services/localDatabase";
 
 type PlayerContextType = {
   currentTrack: Track | null;
@@ -29,6 +40,9 @@ type PlayerContextType = {
   duration: number;
   volume: number;
   favoriteTrackIds: string[];
+  playlists: Playlist[];
+  isStorageReady: boolean;
+  storageError: string | null;
   isShuffleEnabled: boolean;
   isRepeatEnabled: boolean;
   playbackError: string | null;
@@ -46,6 +60,11 @@ type PlayerContextType = {
   moveInTail: (from: number, to: number) => void;
   clearTail: () => void;
   addToTail: (track: Track) => void;
+  persistLibraryTracks: (tracks: Track[]) => Promise<void>;
+  createPlaylist: (title: string, description?: string) => Promise<string>;
+  updatePlaylist: (id: string, title: string, description: string) => Promise<void>;
+  deletePlaylist: (id: string) => Promise<void>;
+  setPlaylistTrackOrder: (id: string, trackIds: string[]) => Promise<void>;
 };
 
 export const PlayerContext = createContext<PlayerContextType | null>(null);
@@ -60,6 +79,9 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
   const [duration, setDuration] = useState(0);
   const [volume, setVolumeState] = useState(0.8);
   const [favoriteTrackIds, setFavoriteTrackIds] = useState<string[]>([]);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [isStorageReady, setIsStorageReady] = useState(false);
+  const [storageError, setStorageError] = useState<string | null>(null);
   const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
   const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
@@ -68,6 +90,42 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
   const currentIndexRef = useRef(0);
   const currentTrackIdRef = useRef<string | null>(null);
   const notificationPermissionRequestRef = useRef<Promise<void> | null>(null);
+
+  const reloadStoredPlaylists = useCallback(async () => {
+    const stored = await loadLocalMusic();
+    setPlaylists(stored.playlists);
+  }, []);
+
+  const reportStorageError = useCallback((action: string, error: unknown) => {
+    console.error(action, error);
+    setStorageError("Les données locales sont illisibles ou indisponibles. Elles n’ont pas été effacées.");
+  }, []);
+
+  const persistTrack = useCallback((track: Track) => {
+    void saveTrack(track).catch((error: unknown) => {
+      reportStorageError("Impossible d’enregistrer les métadonnées du morceau.", error);
+    });
+  }, [reportStorageError]);
+
+  useEffect(() => {
+    let active = true;
+    initializeLocalDatabase()
+      .then(loadLocalMusic)
+      .then((stored) => {
+        if (!active) return;
+        setLibraryTracks(stored.tracks);
+        setFavoriteTrackIds(stored.favoriteTrackIds);
+        setPlaylists(stored.playlists);
+        setIsStorageReady(true);
+      })
+      .catch((error: unknown) => {
+        reportStorageError("Impossible d’initialiser les données locales.", error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [reportStorageError]);
 
   useEffect(() => {
     let active = true;
@@ -225,6 +283,7 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
         );
         setLibraryTracks((tracks) => tracks.map(updateCover));
         setTail((tracks) => tracks.map(updateCover));
+        persistTrack({ ...currentTrack, cover });
       })
       .catch((error: unknown) => {
         console.warn(`Impossible d’extraire la pochette de « ${currentTrack.title} ».`, error);
@@ -233,7 +292,7 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
     return () => {
       active = false;
     };
-  }, [currentTrack, playbackError]);
+  }, [currentTrack, persistTrack, playbackError]);
 
   const playTrack = useCallback((track: Track, list?: Track[]) => {
     try {
@@ -318,12 +377,90 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
   }, [currentTrack, player, playerStatus.playing]);
 
   const toggleFavorite = useCallback((trackId: string) => {
+    const track = libraryTracks.find((item) => item.id === trackId)
+      ?? (currentTrack?.id === trackId ? currentTrack : undefined);
+    if (!track) {
+      setStorageError("Ce morceau n’est plus disponible dans la bibliothèque.");
+      return;
+    }
+
+    const isFavorite = !favoriteTrackIds.includes(trackId);
     setFavoriteTrackIds((current) =>
-      current.includes(trackId)
-        ? current.filter((id) => id !== trackId)
-        : [...current, trackId],
+      isFavorite ? [...current, trackId] : current.filter((id) => id !== trackId),
     );
-  }, []);
+    setTrackFavorite(track, isFavorite)
+      .then(() => setStorageError(null))
+      .catch((error: unknown) => {
+        void loadLocalMusic()
+          .then((stored) => setFavoriteTrackIds(stored.favoriteTrackIds))
+          .catch((reloadError: unknown) =>
+            reportStorageError("Impossible de restaurer les favoris après une erreur.", reloadError),
+          );
+        reportStorageError("Impossible d’enregistrer le favori.", error);
+      });
+  }, [currentTrack, favoriteTrackIds, libraryTracks, reportStorageError]);
+
+  const persistLibraryTracks = useCallback(async (tracks: Track[]) => {
+    try {
+      await saveLibraryTracks(tracks);
+      const stored = await loadLocalMusic();
+      setFavoriteTrackIds(stored.favoriteTrackIds);
+      setPlaylists(stored.playlists);
+      setStorageError(null);
+    } catch (error) {
+      reportStorageError("Impossible d’enregistrer la bibliothèque locale.", error);
+      throw error;
+    }
+  }, [reportStorageError]);
+
+  const createPlaylist = useCallback(async (title: string, description = "") => {
+    try {
+      const id = await createStoredPlaylist(title, description);
+      await reloadStoredPlaylists();
+      setStorageError(null);
+      return id;
+    } catch (error) {
+      reportStorageError("Impossible de créer la playlist.", error);
+      throw error;
+    }
+  }, [reloadStoredPlaylists, reportStorageError]);
+
+  const updatePlaylist = useCallback(async (
+    id: string,
+    title: string,
+    description: string,
+  ) => {
+    try {
+      await updateStoredPlaylist(id, title, description);
+      await reloadStoredPlaylists();
+      setStorageError(null);
+    } catch (error) {
+      reportStorageError("Impossible de modifier la playlist.", error);
+      throw error;
+    }
+  }, [reloadStoredPlaylists, reportStorageError]);
+
+  const deletePlaylist = useCallback(async (id: string) => {
+    try {
+      await deleteStoredPlaylist(id);
+      await reloadStoredPlaylists();
+      setStorageError(null);
+    } catch (error) {
+      reportStorageError("Impossible de supprimer la playlist.", error);
+      throw error;
+    }
+  }, [reloadStoredPlaylists, reportStorageError]);
+
+  const updatePlaylistTrackOrder = useCallback(async (id: string, trackIds: string[]) => {
+    try {
+      await setPlaylistTrackOrder(id, trackIds);
+      await reloadStoredPlaylists();
+      setStorageError(null);
+    } catch (error) {
+      reportStorageError("Impossible de modifier les morceaux de la playlist.", error);
+      throw error;
+    }
+  }, [reloadStoredPlaylists, reportStorageError]);
 
   const replaceTail = useCallback((nextTail: Track[]) => {
     const index = currentIndexRef.current;
@@ -459,6 +596,9 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
       duration,
       volume,
       favoriteTrackIds,
+      playlists,
+      isStorageReady,
+      storageError,
       isShuffleEnabled,
       isRepeatEnabled,
       playbackError,
@@ -476,6 +616,11 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
       moveInTail,
       clearTail,
       addToTail,
+      persistLibraryTracks,
+      createPlaylist,
+      updatePlaylist,
+      deletePlaylist,
+      setPlaylistTrackOrder: updatePlaylistTrackOrder,
     }),
     [
       currentTrack,
@@ -486,6 +631,9 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
       duration,
       volume,
       favoriteTrackIds,
+      playlists,
+      isStorageReady,
+      storageError,
       isShuffleEnabled,
       isRepeatEnabled,
       playbackError,
@@ -502,6 +650,11 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
       moveInTail,
       clearTail,
       addToTail,
+      persistLibraryTracks,
+      createPlaylist,
+      updatePlaylist,
+      deletePlaylist,
+      updatePlaylistTrackOrder,
     ],
   );
 

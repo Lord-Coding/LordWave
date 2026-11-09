@@ -1,30 +1,55 @@
-import { mockAlbums } from "@/constants/mockMusic";
+import type { Album, Track } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
+import { usePlayer } from "@/hooks/usePlayer";
 import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { openCollection } from "@/navigation/openCollection";
+import { albumCollectionId } from "@/services/collectionIds";
 import { Image } from "expo-image";
 import { Play } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
+import { useMemo, useState } from "react";
 import SectionHeader from "./SectionHeader";
 
 export default function AlbumGrid({ searchQuery = "" }: { searchQuery?: string }) {
   const theme = useTheme();
-  const albums = mockAlbums.filter((album) =>
-    [album.title, album.artist, String(album.year)].some((value) =>
-      value.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase()),
-    ),
-  );
+  const { libraryTracks, playTrack } = usePlayer();
+  const [descending, setDescending] = useState(false);
+  const albums = useMemo(() => {
+    const groups = new Map<string, Track[]>();
+    for (const track of libraryTracks) {
+      const key = `${track.album}\u0000${track.artist}`;
+      const group = groups.get(key) ?? [];
+      group.push(track);
+      groups.set(key, group);
+    }
+    return Array.from(groups.values(), (tracks): { album: Album; tracks: Track[] } => ({
+      album: {
+        id: albumCollectionId(tracks[0].album, tracks[0].artist),
+        title: tracks[0].album,
+        artist: tracks[0].artist,
+        cover: tracks.find((track) => track.cover)?.cover ?? "",
+        trackCount: tracks.length,
+      },
+      tracks,
+    }))
+      .filter(({ album }) =>
+        [album.title, album.artist].some((value) =>
+          value.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase()),
+        ),
+      )
+      .sort((left, right) => left.album.title.localeCompare(right.album.title) * (descending ? -1 : 1));
+  }, [descending, libraryTracks, searchQuery]);
 
   return (
     <View style={styles.container}>
       <SectionHeader
         title="Tous les albums"
-        actionLabel="Recents"
-        onActionPress={() => console.log("[LordWave] Trier les albums")}
+        actionLabel={descending ? "Z → A" : "A → Z"}
+        onActionPress={() => setDescending((value) => !value)}
       />
 
       <View style={styles.grid}>
-        {albums.map((album) => (
+        {albums.map(({ album, tracks }) => (
           <Pressable
             key={album.id}
             style={styles.card}
@@ -37,14 +62,21 @@ export default function AlbumGrid({ searchQuery = "" }: { searchQuery?: string }
               ]}
             >
               <Image
-                source={{ uri: album.cover }}
+                source={album.cover ? { uri: album.cover } : require("../../assets/images/explore.png")}
                 style={styles.art}
                 contentFit="cover"
               />
 
-              <View style={styles.play}>
+              <Pressable
+                style={styles.play}
+                onPress={() => {
+                  if (tracks.length) playTrack(tracks[0], tracks);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Lire l’album ${album.title}`}
+              >
                 <Play size={14} color={theme.primary} fill={theme.primary} />
-              </View>
+              </Pressable>
             </View>
 
             <Text
@@ -57,7 +89,7 @@ export default function AlbumGrid({ searchQuery = "" }: { searchQuery?: string }
               numberOfLines={1}
               style={[styles.meta, { color: theme.textSecondary }]}
             >
-              {album.artist} • {album.year}
+              {album.artist} • {album.trackCount} morceaux
             </Text>
           </Pressable>
         ))}

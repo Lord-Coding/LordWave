@@ -14,7 +14,7 @@ interface Props {
 
 export default function TrackItem({ track, onPress, onMore }: Props) {
     const theme = useTheme()
-    const { favoriteTrackIds } = usePlayer()
+    const { favoriteTrackIds, toggleFavorite } = usePlayer()
     const isFavorite = favoriteTrackIds.includes(track.id)
 
     return (
@@ -37,9 +37,19 @@ export default function TrackItem({ track, onPress, onMore }: Props) {
                 <Text numberOfLines={1} style={[styles.subtitle, {color: theme.textSecondary}]}>{track.artist} • {track.album}</Text>
             </View>
 
-            {isFavorite ? (
-                <Heart size={14} color={theme.primary} fill={theme.primary} />
-            ) : null}
+            <Pressable
+                onPress={() => toggleFavorite(track.id)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                accessibilityState={{ selected: isFavorite }}
+            >
+                <Heart
+                    size={17}
+                    color={isFavorite ? theme.primary : theme.textSecondary}
+                    fill={isFavorite ? theme.primary : "transparent"}
+                />
+            </Pressable>
 
             <Text style={[styles.duration, {color: theme.textSecondary}]}>{track.duration}</Text>
 

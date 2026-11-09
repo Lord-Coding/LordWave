@@ -5,7 +5,12 @@ import { MusicCategory, Track } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
 import { usePlayer } from "@/hooks/usePlayer";
 import { RipplePressable as Pressable } from "@/components/RipplePressable";
-import { enrichDeviceMusic, getDeviceMusic } from "@/services/deviceMusic";
+import { enrichDeviceMusic, getDeviceMusic, getTrackFolder } from "@/services/deviceMusic";
+import {
+  albumCollectionId,
+  artistCollectionId,
+  folderCollectionId,
+} from "@/services/collectionIds";
 import { Image } from "expo-image";
 import {
   getPermissionsAsync,
@@ -13,11 +18,12 @@ import {
   addListener,
   type PermissionResponse,
 } from "expo-media-library";
-import { toast } from "burnt";
+import { openCollection } from "@/navigation/openCollection";
 import { Music2, RefreshCw, Search, Shuffle, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   AppState,
   FlatList,
   Keyboard,
@@ -30,19 +36,29 @@ import {
 } from "react-native";
 
 type LibraryGroup = {
-  type: "artist" | "album";
+  type: "artist" | "album" | "folder";
   id: string;
   name: string;
   subtitle: string;
   cover: string;
   tracks: Track[];
 };
+type LibrarySort = "title" | "artist" | "device";
 
 export default function LibraryScreen() {
   const theme = useTheme();
-  const { playTrack, libraryTracks, setLibraryTracks } = usePlayer();
+  const {
+    playTrack,
+    libraryTracks,
+    setLibraryTracks,
+    persistLibraryTracks,
+    favoriteTrackIds,
+    toggleFavorite,
+    storageError,
+  } = usePlayer();
   const [selectedCategory, setSelectedCategory] =
     useState<MusicCategory>("songs");
+  const [sortMode, setSortMode] = useState<LibrarySort>("title");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [permission, setPermission] = useState<PermissionResponse | null>(null);
@@ -61,6 +77,14 @@ export default function LibraryScreen() {
       ),
     [libraryTracks, normalizedQuery],
   );
+  const sortedTracks = useMemo(() => {
+    const tracks = [...filteredTracks];
+    if (sortMode === "title") tracks.sort((left, right) => left.title.localeCompare(right.title));
+    if (sortMode === "artist") tracks.sort((left, right) =>
+      left.artist.localeCompare(right.artist) || left.title.localeCompare(right.title),
+    );
+    return tracks;
+  }, [filteredTracks, sortMode]);
 
   const refreshLibrary = useCallback(async (afterCurrentScan = false): Promise<void> => {
     if (Platform.OS !== "android") return;
@@ -90,16 +114,28 @@ export default function LibraryScreen() {
         });
         if (generation !== enrichmentGenerationRef.current) return;
         setLibraryTracks(tracks);
-        void enrichDeviceMusic(tracks, (updatedTrack) => {
-          if (generation !== enrichmentGenerationRef.current) return;
-          setLibraryTracks((currentTracks) =>
-            currentTracks.map((track) =>
-              track.id === updatedTrack.id ? updatedTrack : track,
-            ),
-          );
-        }).catch((error: unknown) => {
-          console.error("Impossible d’enrichir les métadonnées de la bibliothèque.", error);
-        });
+        void persistLibraryTracks(tracks)
+          .then(async () => {
+            const enrichedTracks = [...tracks];
+            await enrichDeviceMusic(tracks, (updatedTrack) => {
+              if (generation !== enrichmentGenerationRef.current) return;
+              const trackIndex = enrichedTracks.findIndex(
+                (track) => track.id === updatedTrack.id,
+              );
+              if (trackIndex >= 0) enrichedTracks[trackIndex] = updatedTrack;
+              setLibraryTracks((currentTracks) =>
+                currentTracks.map((track) =>
+                  track.id === updatedTrack.id ? updatedTrack : track,
+                ),
+              );
+            });
+            if (generation === enrichmentGenerationRef.current) {
+              await persistLibraryTracks(enrichedTracks);
+            }
+          })
+          .catch((error: unknown) => {
+            console.error("Impossible d’enregistrer ou d’enrichir la bibliothèque locale.", error);
+          });
       } catch (error) {
         console.error("Impossible de charger la bibliothèque audio locale.", error);
         setLoadError("La bibliothèque musicale n’a pas pu être chargée. Réessayez.");
@@ -114,7 +150,7 @@ export default function LibraryScreen() {
     } finally {
       if (scanPromiseRef.current === scan) scanPromiseRef.current = null;
     }
-  }, [setLibraryTracks]);
+  }, [persistLibraryTracks, setLibraryTracks]);
 
   useEffect(() => {
     void refreshLibrary();
@@ -151,8 +187,6 @@ export default function LibraryScreen() {
 
   const handleCategoryChange = useCallback((category: MusicCategory) => {
     setSelectedCategory(category);
-
-    toast({ title: "Catégorie sélectionnée", message: category });
   }, []);
 
   const handleTrackPress = useCallback((track: Track) => playTrack(track, libraryTracks), [libraryTracks, playTrack]);
@@ -166,12 +200,14 @@ export default function LibraryScreen() {
     }
     return Array.from(groups, ([name, tracks]): LibraryGroup => ({
       type: "artist",
-      id: `artist:${name}`,
+      id: artistCollectionId(name),
       name,
       subtitle: `${tracks.length} morceau${tracks.length === 1 ? "" : "x"}`,
       cover: tracks.find((track) => track.cover)?.cover ?? "",
       tracks,
-    })).filter((group) => group.name.toLocaleLowerCase().includes(normalizedQuery));
+    }))
+      .filter((group) => group.name.toLocaleLowerCase().includes(normalizedQuery))
+      .sort((left, right) => left.name.localeCompare(right.name));
   }, [libraryTracks, normalizedQuery]);
 
   const albums = useMemo<LibraryGroup[]>(() => {
@@ -182,24 +218,48 @@ export default function LibraryScreen() {
       tracks.push(track);
       groups.set(key, tracks);
     }
-    return Array.from(groups, ([id, tracks]): LibraryGroup => ({
+    return Array.from(groups.values(), (tracks): LibraryGroup => ({
       type: "album",
-      id: `album:${id}`,
+      id: albumCollectionId(tracks[0].album, tracks[0].artist),
       name: tracks[0].album,
       subtitle: tracks[0].artist,
       cover: tracks.find((track) => track.cover)?.cover ?? "",
       tracks,
-    })).filter((group) =>
-      `${group.name} ${group.subtitle}`.toLocaleLowerCase().includes(normalizedQuery),
-    );
+    }))
+      .filter((group) =>
+        `${group.name} ${group.subtitle}`.toLocaleLowerCase().includes(normalizedQuery),
+      )
+      .sort((left, right) => left.name.localeCompare(right.name));
+  }, [libraryTracks, normalizedQuery]);
+
+  const folders = useMemo<LibraryGroup[]>(() => {
+    const groups = new Map<string, Track[]>();
+    for (const track of libraryTracks) {
+      const path = getTrackFolder(track);
+      if (!path) continue;
+      const tracks = groups.get(path) ?? [];
+      tracks.push(track);
+      groups.set(path, tracks);
+    }
+    return Array.from(groups, ([path, tracks]): LibraryGroup => ({
+      type: "folder",
+      id: folderCollectionId(path),
+      name: path.split("/").filter(Boolean).at(-1) ?? path,
+      subtitle: path,
+      cover: tracks.find((track) => track.cover)?.cover ?? "",
+      tracks,
+    }))
+      .filter((group) => `${group.name} ${group.subtitle}`.toLocaleLowerCase().includes(normalizedQuery))
+      .sort((left, right) => left.name.localeCompare(right.name));
   }, [libraryTracks, normalizedQuery]);
 
   const listData = useMemo<(Track | LibraryGroup)[]>(() => {
-    if (selectedCategory === "songs") return filteredTracks;
+    if (selectedCategory === "songs") return sortedTracks;
     if (selectedCategory === "artists") return artists;
     if (selectedCategory === "albums") return albums;
+    if (selectedCategory === "folders") return folders;
     return [];
-  }, [albums, artists, filteredTracks, selectedCategory]);
+  }, [albums, artists, folders, selectedCategory, sortedTracks]);
 
   const handleShuffle = useCallback(() => {
     if (filteredTracks.length === 0) return;
@@ -227,6 +287,20 @@ export default function LibraryScreen() {
 
               <View style={styles.actions}>
                 <Pressable
+                  onPress={() =>
+                    setSortMode((current) =>
+                      current === "title" ? "artist" : current === "artist" ? "device" : "title",
+                    )
+                  }
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Changer le tri de la bibliothèque"
+                >
+                  <Text style={[styles.sortAction, { color: theme.textSecondary }]}>
+                    {sortMode === "title" ? "A → Z" : sortMode === "artist" ? "Artiste" : "Appareil"}
+                  </Text>
+                </Pressable>
+                <Pressable
                   onPress={handleShuffle}
                   hitSlop={10}
                   accessibilityRole="button"
@@ -251,12 +325,12 @@ export default function LibraryScreen() {
             {albums.length} album{albums.length === 1 ? "" : "s"}
           </Text>
         ) : null}
-        {loadError ? (
-          <Text style={[styles.error, { color: theme.danger }]}>{loadError}</Text>
+        {loadError || storageError ? (
+          <Text style={[styles.error, { color: theme.danger }]}>{loadError ?? storageError}</Text>
         ) : null}
       </View>
     ),
-    [selectedCategory, normalizedQuery, libraryTracks, albums.length, theme, handleCategoryChange, handleShuffle, refreshLibrary],
+    [selectedCategory, normalizedQuery, libraryTracks, albums.length, storageError, sortMode, theme, handleCategoryChange, handleShuffle, refreshLibrary],
   );
 
   const renderTrack = useCallback(
@@ -265,7 +339,7 @@ export default function LibraryScreen() {
         return (
           <Pressable
             style={styles.collectionRow}
-            onPress={() => playTrack(item.tracks[0], item.tracks)}
+            onPress={() => openCollection(item.type, item.id)}
           >
             <Image
               source={item.cover ? { uri: item.cover } : require("../../assets/images/explore.png")}
@@ -289,11 +363,20 @@ export default function LibraryScreen() {
         <TrackItem
           track={item}
           onPress={handleTrackPress}
-          onMore={(track) => toast({ title: "Morceau local", message: track.title })}
+          onMore={(track) =>
+            Alert.alert(track.title, track.artist, [
+              { text: "Lire", onPress: () => handleTrackPress(track) },
+              {
+                text: favoriteTrackIds.includes(track.id) ? "Retirer des favoris" : "Ajouter aux favoris",
+                onPress: () => toggleFavorite(track.id),
+              },
+              { text: "Annuler", style: "cancel" },
+            ])
+          }
         />
       );
     },
-    [handleTrackPress, playTrack, theme],
+    [favoriteTrackIds, handleTrackPress, theme, toggleFavorite],
   );
 
   if (Platform.OS !== "android") {
@@ -442,10 +525,6 @@ export default function LibraryScreen() {
           <Text style={[styles.noResults, { color: theme.textSecondary }]}>
             Aucun fichier audio trouvé. Ajoutez de la musique dans Music ou Download puis actualisez.
           </Text>
-        ) : selectedCategory === "folders" ? (
-          <Text style={[styles.noResults, { color: theme.textSecondary }]}>
-            Les dossiers restent disponibles dans l’application Fichiers. La liste Chansons regroupe ici les fichiers audio accessibles.
-          </Text>
         ) : (
           <Text style={[styles.noResults, { color: theme.textSecondary }]}>
             Aucun résultat{normalizedQuery ? ` pour « ${searchQuery.trim()} »` : ""}.
@@ -512,6 +591,10 @@ const styles = StyleSheet.create({
   },
   quickText: {
     fontSize: 13,
+    fontWeight: "600",
+  },
+  sortAction: {
+    fontSize: 11,
     fontWeight: "600",
   },
   actions: {

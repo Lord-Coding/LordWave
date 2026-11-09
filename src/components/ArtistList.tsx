@@ -1,26 +1,43 @@
-import { mockArtists } from "@/constants/mockMusic";
 import { useTheme } from "@/hooks/use-theme";
+import { usePlayer } from "@/hooks/usePlayer";
 import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { openCollection } from "@/navigation/openCollection";
+import { artistCollectionId } from "@/services/collectionIds";
 import { Image } from "expo-image";
 import { ChevronRight } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
+import { useMemo, useState } from "react";
 import SectionHeader from "./SectionHeader";
 
 export default function ArtistList({ searchQuery = "" }: { searchQuery?: string }) {
   const theme = useTheme();
-  const artists = mockArtists.filter((artist) =>
-    [artist.name, artist.genre].some((value) =>
-      value.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase()),
-    ),
-  );
+  const { libraryTracks } = usePlayer();
+  const [descending, setDescending] = useState(false);
+  const artists = useMemo(() => {
+    const groups = new Map<string, typeof libraryTracks>();
+    for (const track of libraryTracks) {
+      const group = groups.get(track.artist) ?? [];
+      group.push(track);
+      groups.set(track.artist, group);
+    }
+    return Array.from(groups, ([name, tracks]) => ({
+      id: artistCollectionId(name),
+      name,
+      cover: tracks.find((track) => track.cover)?.cover ?? "",
+      trackCount: tracks.length,
+    }))
+      .filter((artist) =>
+        artist.name.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase()),
+      )
+      .sort((left, right) => left.name.localeCompare(right.name) * (descending ? -1 : 1));
+  }, [descending, libraryTracks, searchQuery]);
 
   return (
     <View style={styles.container}>
       <SectionHeader
         title="Tous les artistes"
-        actionLabel="A → Z"
-        onActionPress={() => console.log("[LordWave] Trier les artistes")}
+        actionLabel={descending ? "Z → A" : "A → Z"}
+        onActionPress={() => setDescending((value) => !value)}
       />
 
       {artists.length ? artists.map((artist) => (
@@ -30,7 +47,7 @@ export default function ArtistList({ searchQuery = "" }: { searchQuery?: string 
           onPress={() => openCollection("artist", artist.id)}
         >
           <Image
-            source={{ uri: artist.cover }}
+            source={artist.cover ? { uri: artist.cover } : require("../../assets/images/explore.png")}
             style={[
               styles.avatar,
               { backgroundColor: theme.backgroundElement },
@@ -43,7 +60,7 @@ export default function ArtistList({ searchQuery = "" }: { searchQuery?: string 
               {artist.name}
             </Text>
             <Text style={[styles.meta, { color: theme.textSecondary }]}>
-              {artist.genre} • {artist.trackCount} titres
+              {artist.trackCount} morceaux
             </Text>
           </View>
 

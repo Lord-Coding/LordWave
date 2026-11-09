@@ -1,25 +1,37 @@
-import { mockFolders } from "@/constants/mockMusic";
 import { useTheme } from "@/hooks/use-theme";
+import { usePlayer } from "@/hooks/usePlayer";
 import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { openCollection } from "@/navigation/openCollection";
 import { ChevronRight, Folder } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
+import { useMemo } from "react";
+import { getTrackFolder } from "@/services/deviceMusic";
+import { folderCollectionId } from "@/services/collectionIds";
 import SectionHeader from "./SectionHeader";
 
 export default function FolderList({ searchQuery = "" }: { searchQuery?: string }) {
   const theme = useTheme();
-  const folders = mockFolders.filter((folder) =>
-    [folder.name, folder.path].some((value) =>
-      value.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase()),
-    ),
-  );
+  const { libraryTracks } = usePlayer();
+  const folders = useMemo(() => {
+    const groups = new Map<string, number>();
+    for (const track of libraryTracks) {
+      const path = getTrackFolder(track);
+      if (path) groups.set(path, (groups.get(path) ?? 0) + 1);
+    }
+    return Array.from(groups, ([path, trackCount]) => ({
+      id: folderCollectionId(path),
+      name: path.split("/").filter(Boolean).slice(-1)[0] ?? path,
+      path,
+      trackCount,
+    })).filter((folder) =>
+      `${folder.name} ${folder.path}`.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase()),
+    );
+  }, [libraryTracks, searchQuery]);
 
   return (
     <View style={styles.container}>
       <SectionHeader
         title="Dossiers musicaux"
-        actionLabel="Parcourir"
-        onActionPress={() => console.log("[LordWave] Parcourir le stockage")}
       />
 
       {folders.map((folder) => (

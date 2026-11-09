@@ -2,7 +2,7 @@
 
 LordWave est un projet de lecteur musical local pour Android, développé avec Expo et React Native. L’objectif est de parcourir et lire la musique présente sur le téléphone, hors ligne, avec des favoris et des playlists.
 
-> **État du projet :** la bibliothèque locale Android peut parcourir les morceaux, artistes et albums, et la lecture audio utilise les fichiers présents sur l’appareil. Les favoris et playlists ne sont pas encore persistés. Les fonctionnalités natives doivent être validées sur un appareil Android.
+> **État du projet :** la bibliothèque Android est reliée aux fichiers locaux ; favoris, playlists et leurs morceaux sont persistés avec SQLite. La lecture audio, les pochettes, la recherche et les pages de collections sont raccordées aux données locales. Les parcours natifs et la persistance doivent encore être validés sur un appareil Android.
 
 ## Fonctionnalités prévues
 
@@ -17,7 +17,7 @@ LordWave est un projet de lecteur musical local pour Android, développé avec E
 - Un téléphone Android ou un environnement de développement Android compatible.
 - Un compte Expo/EAS pour créer les builds Android dans le cloud.
 
-Le projet utilise Expo SDK 58, Expo Router, React Native et TypeScript. Les dépendances `expo-media-library`, `expo-audio` et `expo-sqlite` sont déjà déclarées, mais leur présence ne signifie pas que les fonctionnalités associées sont terminées.
+Le projet utilise Expo SDK 58, Expo Router, React Native, TypeScript, `expo-media-library`, `expo-audio` et `expo-sqlite`. La base locale versionnée conserve les morceaux indexés, les favoris, les playlists et l’ordre des morceaux dans chaque playlist.
 
 ## Installation et lancement
 

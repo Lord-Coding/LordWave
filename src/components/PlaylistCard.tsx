@@ -1,4 +1,3 @@
-import { getPlaylistTracks } from "@/constants/mockMusic";
 import { Playlist } from "@/constants/musicType";
 import { useTheme } from "@/hooks/use-theme";
 import { RipplePressable as Pressable } from "@/components/RipplePressable";
@@ -13,10 +12,19 @@ interface Props {
     onMore: (playlist: Playlist) => void;
 }
 
+function formatUpdatedAt(value: string) {
+    const updatedAt = new Date(value);
+    if (Number.isNaN(updatedAt.getTime())) return value;
+    const today = new Date();
+    if (updatedAt.toDateString() === today.toDateString()) return "Aujourd’hui";
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    if (updatedAt.toDateString() === yesterday.toDateString()) return "Hier";
+    return updatedAt.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+
 export default function PlaylistCard({playlist, onPress, onPlay, onMore}: Props) {
     const theme = useTheme();
-    const availableTrackCount = getPlaylistTracks(playlist.id).length;
-
     return (
         <Pressable 
             onPress={() => onPress(playlist)}
@@ -27,7 +35,7 @@ export default function PlaylistCard({playlist, onPress, onPlay, onMore}: Props)
         >
             <View style={[styles.coverContainer, {backgroundColor: theme.backgroundElement}]}>
                 <Image 
-                    source={{ uri: playlist.cover }}
+                    source={playlist.cover ? { uri: playlist.cover } : require("../../assets/images/explore.png")}
                     style={styles.cover}
                     contentFit="cover"
                     transition={200}
@@ -53,13 +61,13 @@ export default function PlaylistCard({playlist, onPress, onPlay, onMore}: Props)
 
                 <View style={styles.trackBadge}>
                     <Music2 size={11} color={theme.white} />
-                    <Text style={[styles.trackCount, {color: theme.white}]}>{availableTrackCount}</Text>
+                    <Text style={[styles.trackCount, {color: theme.white}]}>{playlist.trackCount}</Text>
                 </View>
             </View>
 
             <Text numberOfLines={1} style={[styles.title, {color: theme.text}]}>{playlist.title}</Text>
             <Text numberOfLines={1} style={[styles.description, {color: theme.textSecondary}]}>{playlist.description}</Text>
-            <Text style={[styles.duration, {color: theme.inactive}]}>{playlist.duration} • {playlist.updatedAt}</Text>
+            <Text style={[styles.duration, {color: theme.inactive}]}>{playlist.duration} • {formatUpdatedAt(playlist.updatedAt)}</Text>
         </Pressable>
     )
 }
@@ -107,7 +115,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 5,
         borderRadius: 12,
-        backgroundColor: "rgba(0,0,0,0.55",
+        backgroundColor: "rgba(0,0,0,0.55)",
     },
     trackCount: { 
         fontSize: 10, 
