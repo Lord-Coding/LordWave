@@ -73,10 +73,10 @@ export default function PlaylistCard({playlist, onPress, onPlay, onMore}: Props)
 }
 
 const styles = StyleSheet.create({
-    card: { width: "48%" },
+    card: { width: "48%", borderRadius: 0 },
     coverContainer: {
         aspectRatio: 1,
-        borderRadius: 14,
+        borderRadius: 0,
         overflow: "hidden",
     },
     cover: { width: "100%", height: "100%" },

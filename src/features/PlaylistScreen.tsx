@@ -8,7 +8,7 @@ import { usePlayer } from "@/hooks/usePlayer";
 import { openCollection } from "@/navigation/openCollection";
 import { ActivityIndicator, Alert, FlatList, Modal, StyleSheet, Text, TextInput, View } from "react-native";
 import { ListMusic, Plus, Shuffle, X } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 type SortMode = "recent" | "title" | "tracks";
 
@@ -39,13 +39,13 @@ export default function PlaylistScreen() {
     return items.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }, [playlists, sortMode]);
 
-  const openEditor = (playlist?: Playlist) => {
+  const openEditor = useCallback((playlist?: Playlist) => {
     setEditingPlaylist(playlist ?? null);
     setTitle(playlist?.title ?? "");
     setDescription(playlist?.description ?? "");
     setEditorError(null);
     setIsEditorVisible(true);
-  };
+  }, []);
 
   const saveEditor = async () => {
     if (!title.trim()) {
@@ -69,7 +69,7 @@ export default function PlaylistScreen() {
     }
   };
 
-  const confirmDelete = (playlist: Playlist) => {
+  const confirmDelete = useCallback((playlist: Playlist) => {
     Alert.alert(
       "Supprimer la playlist ?",
       `« ${playlist.title} » sera supprimée. Les fichiers audio ne seront pas affectés.`,
@@ -86,27 +86,34 @@ export default function PlaylistScreen() {
         },
       ],
     );
-  };
+  }, [deletePlaylist]);
 
-  const handlePlaylistMore = (playlist: Playlist) => {
+  const handlePlaylistMore = useCallback((playlist: Playlist) => {
     Alert.alert(playlist.title, "Gérer cette playlist", [
       { text: "Modifier", onPress: () => openEditor(playlist) },
       { text: "Supprimer", style: "destructive", onPress: () => confirmDelete(playlist) },
       { text: "Annuler", style: "cancel" },
     ]);
-  };
+  }, [confirmDelete, openEditor]);
 
-  const getTracks = (playlist: Playlist) =>
-    (playlist.trackIds ?? [])
-      .map((trackId) => libraryTracks.find((track) => track.id === trackId))
-      .filter((track): track is NonNullable<typeof track> => Boolean(track?.uri));
+  const libraryTracksById = useMemo(
+    () => new Map(libraryTracks.map((track) => [track.id, track])),
+    [libraryTracks],
+  );
+  const getTracks = useCallback(
+    (playlist: Playlist) =>
+      (playlist.trackIds ?? [])
+        .map((trackId) => libraryTracksById.get(trackId))
+        .filter((track): track is NonNullable<typeof track> => Boolean(track?.uri)),
+    [libraryTracksById],
+  );
 
-  const handlePlaylistPlay = (playlist: Playlist) => {
+  const handlePlaylistPlay = useCallback((playlist: Playlist) => {
     const tracks = getTracks(playlist);
     if (tracks.length > 0) playTrack(tracks[0], tracks);
-  };
+  }, [getTracks, playTrack]);
 
-  const handleShuffleAll = () => {
+  const handleShuffleAll = useCallback(() => {
     const tracks = Array.from(
       new Map(
         sortedPlaylists.flatMap((playlist) => getTracks(playlist)).map((track) => [track.id, track]),
@@ -119,7 +126,23 @@ export default function PlaylistScreen() {
       [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
     }
     playTrack(shuffled[0], shuffled);
-  };
+  }, [getTracks, playTrack, sortedPlaylists]);
+
+  const handlePlaylistPress = useCallback(
+    (playlist: Playlist) => openCollection("playlist", playlist.id),
+    [],
+  );
+  const renderPlaylist = useCallback(
+    ({ item }: { item: Playlist }) => (
+      <PlaylistCard
+        playlist={item}
+        onPress={handlePlaylistPress}
+        onPlay={handlePlaylistPlay}
+        onMore={handlePlaylistMore}
+      />
+    ),
+    [handlePlaylistMore, handlePlaylistPlay, handlePlaylistPress],
+  );
 
   const nextSortMode: Record<SortMode, SortMode> = {
     recent: "title",
@@ -195,15 +218,8 @@ export default function PlaylistScreen() {
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={styles.gridRow}
-        renderItem={({ item }) => (
-          <PlaylistCard
-            playlist={item}
-            onPress={(playlist) => openCollection("playlist", playlist.id)}
-            onPlay={handlePlaylistPlay}
-            onMore={handlePlaylistMore}
-          />
-        )}
-        ListHeaderComponent={renderHeader}
+        renderItem={renderPlaylist}
+        ListHeaderComponent={renderHeader()}
         ListEmptyComponent={!isStorageReady ? (
           <View style={styles.loading}>
             {storageError ? (

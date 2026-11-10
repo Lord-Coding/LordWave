@@ -11,7 +11,10 @@ export function RipplePressable({ style, ...props }: Props) {
   return (
     <NativePressable
       {...props}
-      android_ripple={{ color: "rgba(176, 175, 174, 0.2)" }}
+      android_ripple={{
+        color: "rgba(176, 175, 174, 0.2)",
+        borderless: false,
+      }}
       style={(state) => [
         styles.base,
         typeof style === "function" ? style(state) : style,

@@ -45,6 +45,11 @@ type LibraryGroup = {
 };
 type LibrarySort = "title" | "artist" | "device";
 
+function albumKey(album: string, artist: string) {
+  if (album === "Album inconnu" || artist === "Artiste inconnu") return null;
+  return `${album}\u0000${artist}`;
+}
+
 export default function LibraryScreen() {
   const theme = useTheme();
   const {
@@ -67,6 +72,7 @@ export default function LibraryScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const scanPromiseRef = useRef<Promise<void> | null>(null);
   const enrichmentGenerationRef = useRef(0);
+  const libraryTracksRef = useRef(libraryTracks);
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
   const filteredTracks = useMemo(
     () =>
@@ -85,6 +91,10 @@ export default function LibraryScreen() {
     );
     return tracks;
   }, [filteredTracks, sortMode]);
+
+  useEffect(() => {
+    libraryTracksRef.current = libraryTracks;
+  }, [libraryTracks]);
 
   const refreshLibrary = useCallback(async (afterCurrentScan = false): Promise<void> => {
     if (Platform.OS !== "android") return;
@@ -106,29 +116,107 @@ export default function LibraryScreen() {
           return;
         }
 
-        setLibraryTracks([]);
+        const cachedTracks = new Map(
+          libraryTracksRef.current.map((track) => [track.id, track]),
+        );
+        const cachedAlbumCovers = new Map<string, string>();
+        for (const track of cachedTracks.values()) {
+          const key = albumKey(track.album, track.artist);
+          if (track.cover && key) {
+            cachedAlbumCovers.set(key, track.cover);
+          }
+        }
+        const restoreCachedData = (track: Track): Track => {
+          const cachedTrack = cachedTracks.get(track.id);
+          const album = cachedTrack?.album || track.album;
+          const artist = cachedTrack?.artist || track.artist;
+          const key = albumKey(album, artist);
+          return {
+            ...track,
+            title: cachedTrack?.title || track.title,
+            artist,
+            album,
+            cover:
+              track.cover ||
+              cachedTrack?.cover ||
+              (key ? cachedAlbumCovers.get(key) : undefined) ||
+              "",
+            ...(cachedTrack?.durationSeconds && !track.durationSeconds
+              ? {
+                  duration: cachedTrack.duration,
+                  durationSeconds: cachedTrack.durationSeconds,
+                }
+              : {}),
+          };
+        };
+
+        let scannedTracks: Track[] = [];
         const tracks = await getDeviceMusic((pageTracks) => {
           if (generation === enrichmentGenerationRef.current) {
-            setLibraryTracks((currentTracks) => [...currentTracks, ...pageTracks]);
+            scannedTracks = [...scannedTracks, ...pageTracks.map(restoreCachedData)];
+            setLibraryTracks(scannedTracks);
           }
         });
         if (generation !== enrichmentGenerationRef.current) return;
-        setLibraryTracks(tracks);
-        void persistLibraryTracks(tracks)
+        const tracksWithCachedData = tracks.map(restoreCachedData);
+        setLibraryTracks(tracksWithCachedData);
+        void persistLibraryTracks(tracksWithCachedData)
           .then(async () => {
-            const enrichedTracks = [...tracks];
+            const enrichedTracks = [...tracksWithCachedData];
+            const trackIndexes = new Map(
+              enrichedTracks.map((track, index) => [track.id, index]),
+            );
+            const pendingUpdates = new Map<string, Track>();
+            const albumCovers = new Map(cachedAlbumCovers);
+            let updateTimer: ReturnType<typeof setTimeout> | null = null;
+            const flushEnrichmentUpdates = () => {
+              if (updateTimer !== null) {
+                clearTimeout(updateTimer);
+                updateTimer = null;
+              }
+              if (generation !== enrichmentGenerationRef.current) {
+                pendingUpdates.clear();
+                return;
+              }
+
+              const updates = new Map(pendingUpdates);
+              pendingUpdates.clear();
+              for (const track of updates.values()) {
+                const key = albumKey(track.album, track.artist);
+                if (track.cover && key) {
+                  albumCovers.set(key, track.cover);
+                }
+                const index = trackIndexes.get(track.id);
+                if (index !== undefined) enrichedTracks[index] = track;
+              }
+
+              for (const [index, track] of enrichedTracks.entries()) {
+                const key = albumKey(track.album, track.artist);
+                const cover = key ? albumCovers.get(key) : undefined;
+                if (!track.cover && cover) {
+                  const updatedTrack = { ...track, cover };
+                  enrichedTracks[index] = updatedTrack;
+                  updates.set(track.id, updatedTrack);
+                }
+              }
+
+              if (updates.size > 0) {
+                setLibraryTracks((currentTracks) =>
+                  currentTracks.map((track) => updates.get(track.id) ?? track),
+                );
+              }
+            };
+
             await enrichDeviceMusic(tracks, (updatedTrack) => {
               if (generation !== enrichmentGenerationRef.current) return;
-              const trackIndex = enrichedTracks.findIndex(
-                (track) => track.id === updatedTrack.id,
-              );
-              if (trackIndex >= 0) enrichedTracks[trackIndex] = updatedTrack;
-              setLibraryTracks((currentTracks) =>
-                currentTracks.map((track) =>
-                  track.id === updatedTrack.id ? updatedTrack : track,
-                ),
-              );
+              pendingUpdates.set(updatedTrack.id, updatedTrack);
+              if (pendingUpdates.size >= 24) {
+                flushEnrichmentUpdates();
+              } else if (updateTimer === null) {
+                updateTimer = setTimeout(flushEnrichmentUpdates, 120);
+              }
             });
+            flushEnrichmentUpdates();
             if (generation === enrichmentGenerationRef.current) {
               await persistLibraryTracks(enrichedTracks);
             }
@@ -645,7 +733,7 @@ const styles = StyleSheet.create({
   collectionCover: {
     width: 56,
     height: 56,
-    borderRadius: 9,
+    borderRadius: 0,
   },
   collectionDetails: {
     flex: 1,

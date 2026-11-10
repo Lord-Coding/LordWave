@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   },
   artwork: {
     maxWidth: "100%",
-    borderRadius: 18,
+    borderRadius: 0,
     alignSelf: "center",
     backgroundColor: "#292596",
   },

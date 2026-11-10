@@ -8,6 +8,12 @@ type PlaylistRow = {
   updated_at: string;
 };
 
+type PlaylistTrackRow = PlaylistRow & {
+  track_id: string | null;
+  cover: string | null;
+  duration_seconds: number | null;
+};
+
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 const SCHEMA_VERSION = 1;
 
@@ -90,49 +96,61 @@ function formatDuration(seconds: number) {
   return `${minutes} min`;
 }
 
-export async function loadLocalMusic() {
-  const database = await getDatabase();
-  const tracks = await database.getAllAsync<Track>(
-    `SELECT id, title, artist, album, cover, duration, duration_seconds AS durationSeconds, uri
-     FROM tracks ORDER BY title COLLATE NOCASE`,
+async function loadPlaylists(database: SQLite.SQLiteDatabase): Promise<Playlist[]> {
+  const rows = await database.getAllAsync<PlaylistTrackRow>(
+    `SELECT playlists.id, playlists.title, playlists.description, playlists.updated_at,
+            playlist_tracks.track_id, tracks.cover, tracks.duration_seconds
+     FROM playlists
+     LEFT JOIN playlist_tracks ON playlist_tracks.playlist_id = playlists.id
+     LEFT JOIN tracks ON tracks.id = playlist_tracks.track_id
+     ORDER BY playlists.updated_at DESC, playlist_tracks.position`,
   );
-  const favoriteRows = await database.getAllAsync<{ track_id: string }>(
-    "SELECT track_id FROM favorites",
-  );
-  const playlistRows = await database.getAllAsync<PlaylistRow>(
-    "SELECT id, title, description, updated_at FROM playlists ORDER BY updated_at DESC",
-  );
+  const playlists: Playlist[] = [];
+  let currentPlaylist: Playlist | undefined;
+  let durationSeconds = 0;
 
-  const playlists = await Promise.all(
-    playlistRows.map(async (row): Promise<Playlist> => {
-      const playlistTracks = await database.getAllAsync<{
-        id: string;
-        cover: string;
-        duration_seconds: number;
-      }>(
-        `SELECT tracks.id, tracks.cover, tracks.duration_seconds
-         FROM playlist_tracks
-         JOIN tracks ON tracks.id = playlist_tracks.track_id
-         WHERE playlist_tracks.playlist_id = ?
-         ORDER BY playlist_tracks.position`,
-        row.id,
-      );
-      const durationSeconds = playlistTracks.reduce(
-        (total, track) => total + track.duration_seconds,
-        0,
-      );
-      return {
+  for (const row of rows) {
+    if (!currentPlaylist || currentPlaylist.id !== row.id) {
+      currentPlaylist = {
         id: row.id,
         title: row.title,
         description: row.description,
-        cover: playlistTracks.find((track) => track.cover)?.cover ?? "",
-        trackCount: playlistTracks.length,
-        duration: formatDuration(durationSeconds),
+        cover: "",
+        trackCount: 0,
+        duration: formatDuration(0),
         updatedAt: row.updated_at,
-        trackIds: playlistTracks.map((track) => track.id),
+        trackIds: [],
       };
-    }),
-  );
+      durationSeconds = 0;
+      playlists.push(currentPlaylist);
+    }
+
+    if (row.track_id) {
+      currentPlaylist.trackIds?.push(row.track_id);
+      currentPlaylist.trackCount++;
+      if (!currentPlaylist.cover && row.cover) currentPlaylist.cover = row.cover;
+      durationSeconds += row.duration_seconds ?? 0;
+      currentPlaylist.duration = formatDuration(durationSeconds);
+    }
+  }
+
+  return playlists;
+}
+
+export async function loadLocalPlaylists() {
+  return loadPlaylists(await getDatabase());
+}
+
+export async function loadLocalMusic() {
+  const database = await getDatabase();
+  const [tracks, favoriteRows, playlists] = await Promise.all([
+    database.getAllAsync<Track>(
+      `SELECT id, title, artist, album, cover, duration, duration_seconds AS durationSeconds, uri
+       FROM tracks ORDER BY title COLLATE NOCASE`,
+    ),
+    database.getAllAsync<{ track_id: string }>("SELECT track_id FROM favorites"),
+    loadPlaylists(database),
+  ]);
 
   return {
     tracks,

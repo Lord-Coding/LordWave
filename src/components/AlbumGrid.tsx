@@ -114,10 +114,11 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "48%",
+    borderRadius: 0,
   },
   artWrap: {
     aspectRatio: 1,
-    borderRadius: 12,
+    borderRadius: 0,
     overflow: "hidden",
   },
   art: {

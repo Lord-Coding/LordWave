@@ -49,9 +49,10 @@ export default function TabsLayout() {
           height: tabBarHeight,
           paddingBottom: insets.bottom,
         },
-        tabBarButton: ({ ref: _ref, ...props }) => (
+        tabBarButton: ({ ref: _ref, style, ...props }) => (
           <Pressable
             {...props}
+            style={[style, styles.tabBarButton]}
           />
         ),
         tabBarLabelStyle: {
@@ -110,3 +111,10 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = {
+  tabBarButton: {
+    borderRadius: 16,
+    overflow: "hidden" as const,
+  },
+};

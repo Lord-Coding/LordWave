@@ -51,12 +51,13 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 12,
         paddingVertical: 9,
+        borderRadius: 0,
     },
 
     cover: {
         width: 48,
         height: 48,
-        borderRadius: 8,
+        borderRadius: 0,
     },
     info: {
         flex: 1,

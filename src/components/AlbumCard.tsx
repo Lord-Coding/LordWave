@@ -48,11 +48,12 @@ export default function AlbumCard({ album, onPress, onPlay }: Props) {
 const styles = StyleSheet.create({
     card: {
         width: 150,
+        borderRadius: 0,
     },
     artWrap: {
         width: 150,
         height: 150,
-        borderRadius: 13,
+        borderRadius: 0,
         overflow: "hidden",
     },
     art: {

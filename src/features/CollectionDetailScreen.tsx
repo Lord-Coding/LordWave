@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 13 },
   error: { marginVertical: 10, fontSize: 12 },
   backButton: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
-  cover: { width: 230, height: 230, borderRadius: 16, alignSelf: "center" },
+  cover: { width: 230, height: 230, borderRadius: 0, alignSelf: "center" },
   artistCover: { borderRadius: 115 },
   heading: { alignItems: "center", marginTop: 24, gap: 8 },
   title: { fontSize: 25, fontWeight: "800", textAlign: "center" },
@@ -328,6 +328,6 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
   modalTitle: { fontSize: 18, fontWeight: "700" },
   availableTrack: { minHeight: 64, flexDirection: "row", alignItems: "center", gap: 12 },
-  availableCover: { width: 46, height: 46, borderRadius: 8 },
+  availableCover: { width: 46, height: 46, borderRadius: 0 },
   availableDetails: { flex: 1, gap: 4 },
 });

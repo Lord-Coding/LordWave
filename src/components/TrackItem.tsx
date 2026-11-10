@@ -71,11 +71,12 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 12,
         paddingVertical: 7,
+        borderRadius: 0,
     },
     cover: {
         width: 52,
         height: 52,
-        borderRadius: 10,
+        borderRadius: 0,
     },
     details: {
         flex: 1,

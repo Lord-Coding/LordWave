@@ -6,7 +6,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { usePlayer } from "@/hooks/usePlayer";
 import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { Heart, Shuffle } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, View, StyleSheet, Text, FlatList } from "react-native";
 
 export default function FavoritesScreen() {
@@ -32,20 +32,28 @@ export default function FavoritesScreen() {
     [favoriteTrackIds, libraryTracks, sortByArtist],
   );
 
-  const handleTrackPress = (track: Track) => {
+  const handleTrackPress = useCallback((track: Track) => {
     playTrack(track, favoriteTracks);
-  }
+  }, [favoriteTracks, playTrack]);
 
-  const handleTrackMore = (track: Track) => {
+  const handleTrackMore = useCallback((track: Track) => {
     toggleFavorite(track.id);
-  }
+  }, [toggleFavorite]);
 
-  const handleShuffle = () => {
+  const handleShuffle = useCallback(() => {
     if (favoriteTracks.length === 0) return;
 
     const shuffledTracks = [...favoriteTracks].sort(() => Math.random() - 0.5);
     playTrack(shuffledTracks[0], shuffledTracks);
-  }
+  }, [favoriteTracks, playTrack]);
+
+  const renderTrack = useCallback(({ item }: { item: Track }) => (
+    <TrackItem
+      track={item}
+      onPress={handleTrackPress}
+      onMore={handleTrackMore}
+    />
+  ), [handleTrackMore, handleTrackPress]);
 
   const renderHeader = () => (
     <View>
@@ -121,15 +129,9 @@ export default function FavoritesScreen() {
         contentContainerStyle={styles.content}
         data={favoriteTracks}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TrackItem
-            track={item}
-            onPress={handleTrackPress}
-            onMore={handleTrackMore}
-          />
-        )}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={isStorageReady ? renderEmpty : (
+        renderItem={renderTrack}
+        ListHeaderComponent={renderHeader()}
+        ListEmptyComponent={isStorageReady ? renderEmpty() : (
           <View style={styles.loading}>
             {storageError ? (
               <Text style={[styles.storageError, { color: theme.danger }]}>{storageError}</Text>

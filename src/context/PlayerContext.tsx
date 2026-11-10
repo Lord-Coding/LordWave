@@ -23,6 +23,7 @@ import {
   createPlaylist as createStoredPlaylist,
   deletePlaylist as deleteStoredPlaylist,
   initializeLocalDatabase,
+  loadLocalPlaylists,
   loadLocalMusic,
   saveLibraryTracks,
   saveTrack,
@@ -70,7 +71,7 @@ type PlayerContextType = {
 export const PlayerContext = createContext<PlayerContextType | null>(null);
 
 export function PlayerProvider({ children }: React.PropsWithChildren) {
-  const player = useAudioPlaylist({ updateInterval: 250 });
+  const player = useAudioPlaylist({ updateInterval: 500 });
   const playerStatus = useAudioPlaylistStatus(player);
   const [libraryTracks, setLibraryTracks] = useState<Track[]>([]);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
@@ -90,10 +91,10 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
   const currentIndexRef = useRef(0);
   const currentTrackIdRef = useRef<string | null>(null);
   const notificationPermissionRequestRef = useRef<Promise<void> | null>(null);
+  const queueAppendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const reloadStoredPlaylists = useCallback(async () => {
-    const stored = await loadLocalMusic();
-    setPlaylists(stored.playlists);
+    setPlaylists(await loadLocalPlaylists());
   }, []);
 
   const reportStorageError = useCallback((action: string, error: unknown) => {
@@ -149,6 +150,12 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
       player.clearLockScreenControls();
     };
   }, [player]);
+
+  useEffect(() => () => {
+    if (queueAppendTimerRef.current !== null) {
+      clearTimeout(queueAppendTimerRef.current);
+    }
+  }, []);
 
   useEffect(() => {
     player.volume = volume;
@@ -296,6 +303,10 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
 
   const playTrack = useCallback((track: Track, list?: Track[]) => {
     try {
+      if (queueAppendTimerRef.current !== null) {
+        clearTimeout(queueAppendTimerRef.current);
+        queueAppendTimerRef.current = null;
+      }
       player.clear();
       currentTrackIdRef.current = track.id;
       if (!track.uri) {
@@ -335,9 +346,7 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
       const queue = [track, ...upcomingTracks];
       playlistTracksRef.current = queue;
       currentIndexRef.current = 0;
-      queue.forEach((item) => {
-        if (item.uri) player.add({ uri: item.uri });
-      });
+      player.add({ uri: track.uri });
       player.skipTo(0);
       player.play();
       setCurrentTrack(track);
@@ -345,6 +354,28 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
       setCurrentTime(0);
       setDuration(track.durationSeconds ?? 0);
       setPlaybackError(null);
+      let nextTrackIndex = 1;
+      const appendQueueBatch = () => {
+        queueAppendTimerRef.current = null;
+        if (currentTrackIdRef.current !== track.id) return;
+
+        try {
+          const batchEnd = Math.min(nextTrackIndex + 32, queue.length);
+          for (; nextTrackIndex < batchEnd; nextTrackIndex++) {
+            const queuedTrack = queue[nextTrackIndex];
+            if (queuedTrack.uri) player.add({ uri: queuedTrack.uri });
+          }
+          if (nextTrackIndex < queue.length) {
+            queueAppendTimerRef.current = setTimeout(appendQueueBatch, 16);
+          }
+        } catch (error) {
+          console.error("Impossible de préparer la suite de la file de lecture.", error);
+          setPlaybackError("La suite de la file de lecture n’a pas pu être préparée.");
+        }
+      };
+      if (queue.length > 1) {
+        queueAppendTimerRef.current = setTimeout(appendQueueBatch, 0);
+      }
     } catch (error) {
       console.error(`Impossible de lire « ${track.title} ».`, error);
       playlistTracksRef.current = [];
