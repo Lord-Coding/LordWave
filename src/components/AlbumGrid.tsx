@@ -62,7 +62,7 @@ export default function AlbumGrid({ searchQuery = "" }: { searchQuery?: string }
               ]}
             >
               <Image
-                source={album.cover ? { uri: album.cover } : require("../../assets/images/explore.png")}
+                source={album.cover ? { uri: album.cover } : require("../../assets/images/unknown_track.png")}
                 style={styles.art}
                 contentFit="cover"
               />

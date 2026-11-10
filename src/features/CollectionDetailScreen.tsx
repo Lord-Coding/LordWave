@@ -167,7 +167,11 @@ export default function CollectionDetailScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Image
-          source={cover ? { uri: cover } : require("../../assets/images/explore.png")}
+          source={cover
+            ? { uri: cover }
+            : type === "artist"
+              ? require("../../assets/images/unknown_artist.png")
+              : require("../../assets/images/unknown_track.png")}
           style={[styles.cover, { backgroundColor: theme.backgroundElement }, type === "artist" && styles.artistCover]}
           contentFit="cover"
         />
@@ -281,7 +285,7 @@ export default function CollectionDetailScreen() {
                     style={styles.availableTrack}
                   >
                     <Image
-                      source={track.cover ? { uri: track.cover } : require("../../assets/images/explore.png")}
+                      source={track.cover ? { uri: track.cover } : require("../../assets/images/unknown_track.png")}
                       style={styles.availableCover}
                       contentFit="cover"
                     />

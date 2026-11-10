@@ -47,7 +47,7 @@ export default function ArtistList({ searchQuery = "" }: { searchQuery?: string 
           onPress={() => openCollection("artist", artist.id)}
         >
           <Image
-            source={artist.cover ? { uri: artist.cover } : require("../../assets/images/explore.png")}
+            source={artist.cover ? { uri: artist.cover } : require("../../assets/images/unknown_artist.png")}
             style={[
               styles.avatar,
               { backgroundColor: theme.backgroundElement },

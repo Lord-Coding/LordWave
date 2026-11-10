@@ -430,7 +430,11 @@ export default function LibraryScreen() {
             onPress={() => openCollection(item.type, item.id)}
           >
             <Image
-              source={item.cover ? { uri: item.cover } : require("../../assets/images/explore.png")}
+              source={item.cover
+                ? { uri: item.cover }
+                : item.type === "artist"
+                  ? require("../../assets/images/unknown_artist.png")
+                  : require("../../assets/images/unknown_track.png")}
               style={[styles.collectionCover, { backgroundColor: theme.backgroundElement }]}
               contentFit="cover"
               transition={150}

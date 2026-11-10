@@ -35,7 +35,7 @@ export default function PlaylistCard({playlist, onPress, onPlay, onMore}: Props)
         >
             <View style={[styles.coverContainer, {backgroundColor: theme.backgroundElement}]}>
                 <Image 
-                    source={playlist.cover ? { uri: playlist.cover } : require("../../assets/images/explore.png")}
+                    source={playlist.cover ? { uri: playlist.cover } : require("../../assets/images/unknown_track.png")}
                     style={styles.cover}
                     contentFit="cover"
                     transition={200}

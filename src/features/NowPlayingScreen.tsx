@@ -109,7 +109,7 @@ export default function NowPlayingScreen() {
 
       <View style={styles.content}>
         <Image
-          source={currentTrack.cover ? { uri: currentTrack.cover } : require("../../assets/images/explore.png")}
+          source={currentTrack.cover ? { uri: currentTrack.cover } : require("../../assets/images/unknown_track.png")}
           style={[styles.artwork, { width: artworkSize, height: artworkSize }]}
           contentFit="cover"
           transition={200}

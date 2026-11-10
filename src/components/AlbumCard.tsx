@@ -24,7 +24,9 @@ export default function AlbumCard({ album, onPress, onPlay }: Props) {
         >
             <View style={[ styles.artWrap, { backgroundColor: theme.backgroundElement } ]}>
                 <Image 
-                    source={{ uri: album.cover }}
+                    source={album.cover
+                        ? { uri: album.cover }
+                        : require("../../assets/images/unknown_track.png")}
                     style={styles.art}
                     contentFit="cover"
                     transition={180}

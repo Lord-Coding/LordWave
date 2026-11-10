@@ -19,7 +19,7 @@ export default function TrackRow({track, tracks, onMorePress}: Props) {
     return (
         <Pressable onPress={() => playTrack(track, tracks)} style={styles.container}>
             <Image 
-                source={track.cover ? { uri: track.cover } : require("../../assets/images/explore.png")}
+                source={track.cover ? { uri: track.cover } : require("../../assets/images/unknown_track.png")}
                 style={[styles.cover, {backgroundColor: theme.backgroundElement}]}
                 contentFit="cover"
             />
