@@ -1,14 +1,22 @@
-import { usePlayer } from "@/hooks/usePlayer"
+import { usePlaybackStatus, usePlayer } from "@/hooks/usePlayer"
 import { RipplePressable as Pressable } from "@/components/RipplePressable"
 import { View, Text, StyleSheet } from "react-native"
 import { Image } from "expo-image"
 import { useTheme } from "@/hooks/use-theme";
 import { ListMusic, Pause, Play, SkipForward, SkipBack } from "lucide-react-native";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
+import { useEffect, useRef } from "react";
 
 export default function MiniPlayer() {
     const theme = useTheme();
-    const { currentTrack, isPlaying, togglePlayback, nextTrack, previousTrack, tail } = usePlayer()
+    const pathname = usePathname();
+    const isOpeningPlayerRef = useRef(pathname === "/now-playing");
+    const { currentTrack, togglePlayback, nextTrack, previousTrack, tail } = usePlayer()
+    const { isPlaying } = usePlaybackStatus()
+
+    useEffect(() => {
+        if (pathname !== "/now-playing") isOpeningPlayerRef.current = false;
+    }, [pathname]);
 
     if (!currentTrack) return null;
 
@@ -16,7 +24,11 @@ export default function MiniPlayer() {
         <View style={[styles.container, {backgroundColor: theme.shade}]}>
             <Pressable
                 style={styles.trackArea}
-                onPress={() => router.push("/now-playing")}
+                onPress={() => {
+                    if (isOpeningPlayerRef.current || pathname === "/now-playing") return;
+                    isOpeningPlayerRef.current = true;
+                    router.navigate("/now-playing");
+                }}
             >
                 <Image 
                     source={currentTrack.cover ? { uri: currentTrack.cover } : require("../../assets/images/unknown_track.png")}
@@ -62,7 +74,7 @@ export default function MiniPlayer() {
 
             <Pressable
                 style={styles.control}
-                onPress={() => router.push("/tails")}
+                onPress={() => router.navigate("/tails")}
                 hitSlop={8}
                 accessibilityRole="button"
                 accessibilityLabel={`Ouvrir la file d'attente, ${tail.length} morceaux à suivre`}

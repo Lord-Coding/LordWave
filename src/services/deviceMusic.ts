@@ -1,23 +1,15 @@
 import { Asset, AssetField, MediaType, Query } from "expo-media-library";
 import type { Track } from "@/constants/musicType";
-import { cacheEmbeddedArtwork, readAudioMetadata } from "@/services/audioMetadata";
+import {
+  cacheEmbeddedArtwork,
+  clearNearbyArtworkCache,
+  findNearbyArtwork,
+  readAudioMetadata,
+} from "@/services/audioMetadata";
 
 const PAGE_SIZE = 200;
 const URI_WORKERS = 12;
 const METADATA_WORKERS = 3;
-const SUPPORTED_EXTENSIONS = new Set([
-  "aac",
-  "amr",
-  "flac",
-  "m4a",
-  "mp3",
-  "oga",
-  "ogg",
-  "opus",
-  "wav",
-  "weba",
-]);
-
 function formatDuration(seconds: number) {
   const totalSeconds = Math.max(0, Math.floor(seconds));
   const minutes = Math.floor(totalSeconds / 60);
@@ -88,6 +80,7 @@ async function mapWithConcurrency<T, R>(
 export async function getDeviceMusic(
   onPage?: (tracks: Track[]) => void,
 ): Promise<Track[]> {
+  clearNearbyArtworkCache();
   const tracks: Track[] = [];
   const seenIds = new Set<string>();
 
@@ -107,12 +100,9 @@ export async function getDeviceMusic(
       async (asset): Promise<Track | null> => {
         try {
           const filename = asset.filename ?? "";
-          const extension = filename.split(".").pop()?.toLowerCase();
 
           if (
             asset.mediaType !== MediaType.AUDIO ||
-            !extension ||
-            !SUPPORTED_EXTENSIONS.has(extension) ||
             seenIds.has(asset.id)
           ) {
             return null;
@@ -158,7 +148,7 @@ export async function enrichDeviceMusic(
   await mapWithConcurrency(tracks, METADATA_WORKERS, async (track) => {
     if (!track.uri) return;
 
-    const [metadata, cover] = await Promise.all([
+    const [metadata, embeddedCover] = await Promise.all([
       readAudioMetadata(track.uri).catch((error: unknown) => {
         console.warn(`Impossible de lire les métadonnées audio ${track.title}.`, error);
         return null;
@@ -168,6 +158,10 @@ export async function enrichDeviceMusic(
         return null;
       }),
     ]);
+    const cover = embeddedCover ?? await findNearbyArtwork(track.uri).catch((error: unknown) => {
+      console.warn(`Impossible de récupérer une pochette du dossier de « ${track.title} ».`, error);
+      return null;
+    });
 
     onTrackUpdated({
       ...track,

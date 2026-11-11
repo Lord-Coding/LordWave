@@ -1,5 +1,5 @@
 import { useTheme } from "@/hooks/use-theme";
-import { usePlayer } from "@/hooks/usePlayer";
+import { usePlaybackStatus, usePlayer } from "@/hooks/usePlayer";
 import { RipplePressable as Pressable } from "@/components/RipplePressable";
 import { router } from "expo-router";
 import {
@@ -36,10 +36,8 @@ export default function NowPlayingScreen() {
   const { width, height } = useWindowDimensions();
   const {
     currentTrack,
-    isPlaying,
     togglePlayback,
     nextTrack,
-    currentTime,
     previousTrack,
     seekTo,
     volume,
@@ -51,9 +49,9 @@ export default function NowPlayingScreen() {
     toggleShuffle,
     toggleRepeat,
     tail,
-    duration: playerDuration,
     playbackError,
   } = usePlayer();
+  const { isPlaying, currentTime, duration: playerDuration } = usePlaybackStatus();
   const artworkSize = Math.min(width - 44, height * 0.36, 380);
   const isFavorite = favoriteTrackIds.includes(currentTrack?.id ?? "");
 

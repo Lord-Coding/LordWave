@@ -11,6 +11,9 @@ type AudioMetadata = {
 
 let audioMetadataModulePromise: Promise<AudioMetadataModule | null> | null = null;
 const artworkRequests = new Map<string, Promise<string | null>>();
+const folderArtworkRequests = new Map<string, Promise<string | null>>();
+const imageExtensions = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+const preferredArtworkNames = ["cover", "folder", "front", "albumart", "artwork", "album"];
 
 function getAudioMetadataModule() {
   if (!audioMetadataModulePromise) {
@@ -95,4 +98,49 @@ export function cacheEmbeddedArtwork(trackId: string, uri: string): Promise<stri
   });
   artworkRequests.set(key, request);
   return request;
+}
+
+async function findFolderArtwork(folder: Directory): Promise<string | null> {
+  const imageFiles = folder.list().filter(
+    (entry): entry is File =>
+      entry instanceof File && imageExtensions.has(entry.extension.toLowerCase()),
+  );
+  if (imageFiles.length === 0) return null;
+
+  const rankedFiles = imageFiles
+    .map((file) => {
+      const baseName = file.name
+        .slice(0, -file.extension.length)
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+      const priority = preferredArtworkNames.findIndex(
+        (name) => baseName === name || baseName.startsWith(name),
+      );
+      return { file, priority };
+    })
+    .filter(({ priority }) => priority >= 0)
+    .sort((left, right) => left.priority - right.priority);
+
+  if (rankedFiles.length > 0) return rankedFiles[0].file.uri;
+  return imageFiles.length === 1 ? imageFiles[0].uri : null;
+}
+
+export function findNearbyArtwork(uri: string): Promise<string | null> {
+  const filePath = nativeFilePath(uri);
+  if (!filePath) return Promise.resolve(null);
+
+  const folder = new File(uri).parentDirectory;
+  const existingRequest = folderArtworkRequests.get(folder.uri);
+  if (existingRequest) return existingRequest;
+
+  const request = findFolderArtwork(folder);
+  folderArtworkRequests.set(folder.uri, request);
+  return request.catch((error: unknown) => {
+    folderArtworkRequests.delete(folder.uri);
+    throw error;
+  });
+}
+
+export function clearNearbyArtworkCache() {
+  folderArtworkRequests.clear();
 }

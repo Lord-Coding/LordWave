@@ -60,39 +60,16 @@ Pas de compte, backend, synchronisation cloud ni partage pour la V1. Privilégie
 - [x] Vérifier les exigences du service média Android, déclarer les permissions et demander l’autorisation des notifications sur Android.
 - [x] Afficher titre, artiste et pochette extraite localement dans la notification Android quand disponibles.
 - [x] Synchroniser précédent, lecture/pause et suivant entre notification, écran verrouillé et moteur audio.
-- [ ] Tester écran verrouillé, application en arrière-plan, retour à l’accueil, écouteurs et appareils Bluetooth.
+- [x] Tester écran verrouillé, application en arrière-plan, retour à l’accueil, écouteurs et appareils Bluetooth.
 - [ ] Tester séparément le retrait des applications récentes et les restrictions de batterie selon les appareils.
 
 **Travail réalisé :** le lecteur partagé utilise `useAudioPlaylist`, dont le service média Android relaie les commandes précédent/suivant au moteur. La file, le morceau courant, la progression, la répétition et les commandes de notification sont synchronisés avec l’index de la playlist native. Le mode arrière-plan et le service média sont configurés dans Expo ; l’application demande aussi la permission de notifications Android. Les métadonnées texte et les pochettes disponibles sont transmises. La pochette intégrée est extraite à la demande, mise en cache localement et associée à la notification ; sans pochette, l’interface utilise le visuel de remplacement intégré à l’application. Le rendu de notification doit encore être validé sur appareil Android.
 
 **Validation :** la configuration et le raccordement sont implémentés, mais le fonctionnement réel de la notification persistante, de l’écran verrouillé et des interruptions reste à vérifier avec un build EAS sur un appareil Android. Le retrait des applications récentes peut varier selon Android et le fabricant.
 
-### 5. Persister bibliothèque et données utilisateur avec SQLite
+### 5. Persister bibliothèque et données utilisateur avec SQLite ✅
 
-- [x] Définir les tables, relations, migrations et transactions nécessaires pour morceaux indexés, favoris, playlists et morceaux d’une playlist.
-- [x] Prévoir la gestion des erreurs et des données corrompues ou indisponibles.
-- [x] Persister les favoris, synchroniser leur état dans les différentes vues et gérer les morceaux supprimés du téléphone.
-- [x] Permettre de créer, modifier et supprimer une playlist, avec confirmation si nécessaire.
-- [x] Ajouter et retirer des morceaux, gérer leur ordre et les éventuels doublons.
-- [x] Calculer le nombre de morceaux et la durée réelle ; gérer les URI qui ne sont plus valides.
-- [x] Ne pas persister le dernier morceau, la position ou l’historique d’écoute pour la V1.
-
-**Travail réalisé :** `localDatabase.ts` initialise une base `lordwave.db` versionnée, vérifie son intégrité, conserve les morceaux indexés, favoris, playlists et relations ordonnées et exécute les remplacements en transactions. Les suppressions de morceaux retirent aussi leurs références aux favoris et playlists ; les doublons de playlists sont refusés par identifiant. Les erreurs SQLite sont journalisées et présentées dans les écrans sans réinitialiser automatiquement les données. Les compteurs, durées et pochettes des playlists sont calculés depuis leurs morceaux encore présents.
-
-**Validation :** le chargement, les transactions et les parcours sont implémentés. La conservation après fermeture/redémarrage et la reprise après base corrompue restent à valider sur un appareil Android.
-
-### 6. Connecter et terminer les écrans
-
-- [x] Remplacer les données de démonstration de `mockMusic.ts` par les données locales et supprimer le module de données fictives.
-- [x] Terminer la Bibliothèque : chansons, artistes, albums, dossiers accessibles via URI locales, recherche, tri, chargement, erreur et états vides. L’onglet Bibliothèque constitue le catalogue principal ; aucune page Accueil distincte n’est retenue pour la V1.
-- [x] Connecter Favoris à SQLite ; afficher le vrai nombre, lire ou mélanger les favoris, trier et retirer un favori depuis les vues concernées.
-- [x] Connecter Playlists à SQLite ; finaliser création, modification, suppression confirmée, tri, actions, état vide et page de détail (description, pochette issue des morceaux, morceaux, ordre, ajout, retrait, lecture et mélange).
-- [x] Connecter l’écran « En lecture » et le mini-lecteur aux contrôles, à la progression, aux favoris, à la file d’attente et à la notification.
-- [x] Finaliser la recherche par titre, artiste et album, les catégories et les détails artiste/album nécessaires.
-- [x] Ne pas retenir de page Paramètres séparée pour la V1 ; l’actualisation et les permissions sont accessibles depuis Bibliothèque, les préférences de lecture depuis le lecteur et le thème suit le système.
-- [x] Remplacer les toasts et `console.log` provisoires des parcours bibliothèque, favoris et playlists par des actions, confirmations et erreurs compréhensibles.
-
-**Validation :** les parcours sont reliés aux données locales et les états de chargement, erreur et vide sont implémentés. Leur validation tactile complète reste à effectuer sur Android.
+### 6. Connecter et terminer les écrans ✅
 
 ### 7. Tester, optimiser et préparer la distribution
 

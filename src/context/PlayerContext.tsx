@@ -10,6 +10,7 @@ import { File } from "expo-file-system";
 import {
   createContext,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -36,9 +37,6 @@ type PlayerContextType = {
   currentTrack: Track | null;
   libraryTracks: Track[];
   tail: Track[];
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
   volume: number;
   favoriteTrackIds: string[];
   playlists: Playlist[];
@@ -68,7 +66,14 @@ type PlayerContextType = {
   setPlaylistTrackOrder: (id: string, trackIds: string[]) => Promise<void>;
 };
 
+type PlaybackStatus = {
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+};
+
 export const PlayerContext = createContext<PlayerContextType | null>(null);
+const PlaybackStatusContext = createContext<PlaybackStatus | null>(null);
 
 export function PlayerProvider({ children }: React.PropsWithChildren) {
   const player = useAudioPlaylist({ updateInterval: 500 });
@@ -622,9 +627,6 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
       currentTrack,
       libraryTracks,
       tail,
-      isPlaying: playerStatus.playing,
-      currentTime,
-      duration,
       volume,
       favoriteTrackIds,
       playlists,
@@ -657,9 +659,6 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
       currentTrack,
       libraryTracks,
       tail,
-      playerStatus.playing,
-      currentTime,
-      duration,
       volume,
       favoriteTrackIds,
       playlists,
@@ -689,5 +688,28 @@ export function PlayerProvider({ children }: React.PropsWithChildren) {
     ],
   );
 
-  return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
+  const playbackStatus = useMemo(
+    () => ({
+      isPlaying: playerStatus.playing,
+      currentTime,
+      duration,
+    }),
+    [currentTime, duration, playerStatus.playing],
+  );
+
+  return (
+    <PlaybackStatusContext.Provider value={playbackStatus}>
+      <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>
+    </PlaybackStatusContext.Provider>
+  );
+}
+
+export function usePlaybackStatus() {
+  const context = useContext(PlaybackStatusContext);
+
+  if (!context) {
+    throw new Error("usePlaybackStatus doit être utilisé dans PlayerProvider");
+  }
+
+  return context;
 }

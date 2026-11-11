@@ -1,4 +1,4 @@
-import { PlayerContext } from "@/context/PlayerContext";
+import { PlayerContext, usePlaybackStatus } from "@/context/PlayerContext";
 import { useContext } from "react";
 
 export function usePlayer() {
@@ -11,3 +11,5 @@ export function usePlayer() {
     }
     return context;
 }
+
+export { usePlaybackStatus };
